@@ -8,7 +8,8 @@ const createProductSchema = joi.object({
       name: joi.string().required(),
     })
   ),
-  img: joi.string()
+  img: joi.string(),
+  stock: joi.number().required()
 });
 
 module.exports = {

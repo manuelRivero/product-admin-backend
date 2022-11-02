@@ -9,6 +9,7 @@ app.use(express.json());
 dbConnection();
 
 app.use("/api/products", require("./src/routes/products"));
+app.use("/api/sale", require("./src/routes/sales"));
 
 app.listen(5000, () => {
   console.log("server running on port 5000");
