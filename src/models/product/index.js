@@ -24,6 +24,13 @@ const ProductSchema = Schema(
         },
       ],
     },
+    stock:{
+      type:Number,
+      required: true
+    },
+    discount:{
+      type:Number,
+    }
   },
   { colection: "products" }
 );
