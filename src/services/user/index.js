@@ -1,4 +1,3 @@
-
 const validateImage = async (req, res, next) => {
   if (!req.files) {
     return res.status(400).json({

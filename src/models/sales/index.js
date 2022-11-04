@@ -16,11 +16,11 @@ const SaleSchema = Schema(
     //     type: Schema.Types.ObjectId,
     //     ref: "user"
     //   },
-    total:{
-      type:Number
-    }
+    total: {
+      type: Number,
+    },
   },
-  { colletion: "Sales" }
+  { colletion: "Sales", timestamps: true }
 );
 
 module.exports = model("Sale", SaleSchema);

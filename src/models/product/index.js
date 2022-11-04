@@ -24,15 +24,15 @@ const ProductSchema = Schema(
         },
       ],
     },
-    stock:{
-      type:Number,
-      required: true
+    stock: {
+      type: Number,
+      required: true,
     },
-    discount:{
-      type:Number,
-    }
+    discount: {
+      type: Number,
+    },
   },
-  { colection: "products" }
+  { colection: "products", timestamps: true }
 );
 
 module.exports = model("Products", ProductSchema);

@@ -1,7 +1,9 @@
 const { v4: uuid } = require("uuid");
+const moment = require("moment");
 const path = require("path");
 
 const User = require("./../../models/user");
+const { isToday } = require("../../services/user");
 
 const createUser = async (req, res) => {
   const { body } = req;
@@ -12,6 +14,18 @@ const createUser = async (req, res) => {
   const filePath =
     path.join(__dirname, "../../public/uploads/users/") + fileName;
 
+    try {
+      const targetUser = await User.find({email:body.email})
+      console.log("user", targetUser)
+      if(targetUser.length > 0){
+        return res.status(400).json({
+          ok:false,
+          message:"El email ya se encuentra registrado"
+        })
+      }
+    } catch (error) {
+      
+    }
   file.mv(filePath, (error) => {
     if (error) {
       return res.status(400).json({
@@ -35,7 +49,57 @@ const createUser = async (req, res) => {
     });
   }
 };
+const getUsers = async (req, res) => {
+  const { query } = req;
+  if (!query.maxDate && query.minDate) {
+    return res.status(404).json({
+      ok: false,
+      message: "La fecha máxima es requerida",
+    });
+  }
+  if (!query.minDate && query.maxDate) {
+    return res.status(404).json({
+      ok: false,
+      message: "La fecha minima es requerida",
+    });
+  }
 
+  if (query.minDate && !moment(query.minDate, "YYYY/MM/DD").isValid()) {
+    return res.status(404).json({
+      ok: false,
+      message: "La fecha minima no es valida",
+    });
+  }
+  if (query.maxDate && !moment(query.maxDate, "YYYY/MM/DD").isValid()) {
+    return res.status(404).json({
+      ok: false,
+      message: "La fecha máxima no es valida",
+    });
+  }
+  const regex =  new RegExp(req.query.search, 'i')
+  const page = query.page || 0;
+  const search = query.search
+    ? { name: regex, email: regex }
+    : {};
+
+  const maxDate = query.maxDate
+    ? { $lte: new Date(new Date(query.maxDate).setHours(23, 59)) }
+    : {};
+  const minDate = query.minDate ? { $gte: new Date(query.minDate) } : {};
+  const dateQuery = { createdAt: { ...maxDate, ...minDate } };
+  console.log("date query", dateQuery);
+  const [users, total] = await Promise.all([
+    User.find({ ...search, ...dateQuery }),
+    User.find({ ...search, ...dateQuery }).count(),
+  ]);
+
+  res.status(200).json({
+    ok: true,
+    users,
+    total,
+  });
+};
 module.exports = {
   createUser,
+  getUsers,
 };

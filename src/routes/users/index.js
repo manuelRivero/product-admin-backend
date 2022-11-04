@@ -5,7 +5,7 @@ const router = Router();
 const schemaValidation = require("../../middleware/joiValidation");
 const { createUserSchema } = require("./../../schemas/user");
 //controllers
-const { createUser } = require("../../controllers/user");
+const { createUser, getUsers } = require("../../controllers/user");
 const { validateImage } = require("../../services/user");
 
 router.post(
@@ -14,8 +14,6 @@ router.post(
   createUser
 );
 
-router.get("/", () => {
-  console.log("get");
-});
+router.get("/",  getUsers);
 
 module.exports = router;
