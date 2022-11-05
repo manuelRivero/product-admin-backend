@@ -5,15 +5,16 @@ const { generatejWT } = require("./../../helpers/auth");
 const login = async (req, res) => {
   const { email, password } = req.body;
 
-  const targetUser = await User.find(email);
+  const targetUser = await User.findOne({email});
   if (!targetUser) {
-    res.status(404).json({
+    return res.status(404).json({
       ok: false,
       message: "Credenciales invalidas",
     });
   }
-  if (!bcript.compareSync(targetUser.password, password)) {
-    res.status(404).json({
+  
+  if (!bcript.compareSync(password, targetUser.password )) {
+    return res.status(404).json({
       ok: false,
       message: "Credenciales invalidas",
     });
