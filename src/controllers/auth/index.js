@@ -20,7 +20,7 @@ const login = async (req, res) => {
     });
   }
 
-  const token = await generatejWT(targetUser.id);
+  const token = await generatejWT(targetUser.id, targetUser.role);
   res.status(200).json({
     ok: true,
     token,

@@ -10,8 +10,9 @@ const validateJWT = (req, res, next) => {
         });
     }
     try {
-        const { uid } = jwt.verify(token, process.env.SECRETORPRIVATEKEY);
+        const { uid, role } = jwt.verify(token, process.env.SECRETORPRIVATEKEY);
         req.uid = uid;
+        req.role = role
         next();
     } catch (error) {
         console.log("error", error)
