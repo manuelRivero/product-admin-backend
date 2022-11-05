@@ -1,9 +1,10 @@
 const { v4: uuid } = require("uuid");
 const moment = require("moment");
+const bcript = require("bcryptjs");
 const path = require("path");
 
 const User = require("./../../models/user");
-const { isToday } = require("../../services/user");
+const { generatejWT } = require("../../helpers/auth");
 
 const createUser = async (req, res) => {
   const { body } = req;
@@ -14,18 +15,18 @@ const createUser = async (req, res) => {
   const filePath =
     path.join(__dirname, "../../public/uploads/users/") + fileName;
 
-    try {
-      const targetUser = await User.find({email:body.email})
-      console.log("user", targetUser)
-      if(targetUser.length > 0){
-        return res.status(400).json({
-          ok:false,
-          message:"El email ya se encuentra registrado"
-        })
-      }
-    } catch (error) {
-      
+  try {
+    const targetUser = await User.find({ email: body.email });
+    console.log("user", targetUser);
+    if (targetUser.length > 0) {
+      return res.status(400).json({
+        ok: false,
+        message: "El email ya se encuentra registrado",
+      });
     }
+  } catch (error) {
+    console.log("error");
+  }
   file.mv(filePath, (error) => {
     if (error) {
       return res.status(400).json({
@@ -36,10 +37,14 @@ const createUser = async (req, res) => {
   });
   try {
     const user = new User({ ...body, avatar: fileName });
+    const salt = bcript.genSaltSync();
+    user.password = bcript.hashSync(body.password, salt);
+    const token = await generatejWT(user.id);
     await user.save();
     res.json({
       ok: true,
       user: user,
+      token: token,
     });
   } catch (error) {
     console.log("error en la creación de usuario", error);
@@ -76,11 +81,9 @@ const getUsers = async (req, res) => {
       message: "La fecha máxima no es valida",
     });
   }
-  const regex =  new RegExp(req.query.search, 'i')
+  const regex = new RegExp(req.query.search, "i");
   const page = query.page || 0;
-  const search = query.search
-    ? { name: regex, email: regex }
-    : {};
+  const search = query.search ? { name: regex, email: regex } : {};
 
   const maxDate = query.maxDate
     ? { $lte: new Date(new Date(query.maxDate).setHours(23, 59)) }

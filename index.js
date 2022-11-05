@@ -21,6 +21,7 @@ app.use(fileUpload())
 
 
 dbConnection();
+app.use("/api/auth", require("./src/routes/auth"));
 
 app.use("/api/products", require("./src/routes/products"));
 app.use("/api/sale", require("./src/routes/sales"));
