@@ -11,11 +11,11 @@ const SaleSchema = Schema(
         },
       ],
     },
-    // user: {
-    //     required: true,
-    //     type: Schema.Types.ObjectId,
-    //     ref: "user"
-    //   },
+    user: {
+        required: true,
+        type: Schema.Types.ObjectId,
+        ref: "user"
+      },
     total: {
       type: Number,
     },
