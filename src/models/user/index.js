@@ -44,7 +44,7 @@ const UserSchema = Schema({
   },
 
 }, {
-    collection: "Users",
+    collection: "users",
     timestamps: true 
 });
 

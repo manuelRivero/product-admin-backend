@@ -14,7 +14,7 @@ const SaleSchema = Schema(
     user: {
         required: true,
         type: Schema.Types.ObjectId,
-        ref: "user"
+        ref: "User"
       },
     total: {
       type: Number,

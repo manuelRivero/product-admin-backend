@@ -59,7 +59,7 @@ const createSale = async (req, res) => {
       return total + product.price * Number(element.quantity);
     }
   }, 0);
-  
+
   const sale = new Sale({
     products: products.map((e) => {
       return {
@@ -78,7 +78,30 @@ const createSale = async (req, res) => {
     });
   } catch (error) {}
 };
-
+const getSales = async (req, res) => {
+  const page = Number(req.query.page) || 0;
+  const regex = new RegExp(req.query.search, "i");
+  const search = req.query.search ? { name: regex } : {};
+  const tags = req.query.tags
+    ? { "tags.name": { $in: JSON.parse(req.query.tags) } }
+    : {};
+  const [sales, total] = await Promise.all(
+    [
+      Sale.find({ ...search, ...tags })
+        .populate({ path: "user", select: "name lastname email provider" })
+        .populate({ path: "products", select: "name price" })
+        .skip(page * 10)
+        .limit(10),
+    ],
+    Sale.find({ ...search, ...tags })
+  );
+  res.status(200).json({
+    ok: true,
+    sales,
+    total,
+  });
+};
 module.exports = {
   createSale,
+  getSales,
 };
