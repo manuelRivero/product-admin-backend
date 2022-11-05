@@ -2,6 +2,8 @@ const Sale = require("./../../models/sales");
 const Product = require("./../../models/product");
 const User = require("./../../models/user");
 
+const moment = require("moment");
+
 const createSale = async (req, res) => {
   const { products } = req.body;
   const { uid } = req;
@@ -79,15 +81,49 @@ const createSale = async (req, res) => {
   } catch (error) {}
 };
 const getSales = async (req, res) => {
+  const { query } = req;
+  if (!query.maxDate && query.minDate) {
+    return res.status(404).json({
+      ok: false,
+      message: "La fecha máxima es requerida",
+    });
+  }
+  if (!query.minDate && query.maxDate) {
+    return res.status(404).json({
+      ok: false,
+      message: "La fecha minima es requerida",
+    });
+  }
+
+  if (query.minDate && !moment(query.minDate, "YYYY/MM/DD").isValid()) {
+    return res.status(404).json({
+      ok: false,
+      message: "La fecha minima no es valida",
+    });
+  }
+  if (query.maxDate && !moment(query.maxDate, "YYYY/MM/DD").isValid()) {
+    return res.status(404).json({
+      ok: false,
+      message: "La fecha máxima no es valida",
+    });
+  }
   const page = Number(req.query.page) || 0;
   const regex = new RegExp(req.query.search, "i");
   const search = req.query.search ? { name: regex } : {};
   const tags = req.query.tags
     ? { "tags.name": { $in: JSON.parse(req.query.tags) } }
     : {};
+  const maxDate = query.maxDate
+    ? { $lte: new Date(new Date(query.maxDate).setHours(23, 59)) }
+    : {};
+  const minDate = query.minDate ? { $gte: new Date(query.minDate) } : {};
+  const dateQuery =
+    query.minDate && query.maxDate
+      ? { createdAt: { ...maxDate, ...minDate } }
+      : {};
   const [sales, total] = await Promise.all(
     [
-      Sale.find({ ...search, ...tags })
+      Sale.find({ ...search, ...tags, ...dateQuery })
         .populate({ path: "user", select: "name lastname email provider" })
         .populate({ path: "products", select: "name price" })
         .skip(page * 10)
