@@ -40,10 +40,11 @@ const createUser = async (req, res) => {
     const salt = bcript.genSaltSync();
     user.password = bcript.hashSync(body.password, salt);
     const token = await generatejWT(user.id);
+    const {password, ...rest} = user
     await user.save();
     res.json({
       ok: true,
-      user: user,
+      user: rest,
       token: token,
     });
   } catch (error) {
