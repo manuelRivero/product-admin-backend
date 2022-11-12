@@ -95,13 +95,13 @@ const getSales = async (req, res) => {
     });
   }
 
-  if (query.minDate && !moment(query.minDate, "YYYY/MM/DD").isValid()) {
+  if (query.minDate && !moment(query.minDate, "YYYY-MM-DD").isValid()) {
     return res.status(404).json({
       ok: false,
       message: "La fecha minima no es valida",
     });
   }
-  if (query.maxDate && !moment(query.maxDate, "YYYY/MM/DD").isValid()) {
+  if (query.maxDate && !moment(query.maxDate, "YYYY-MM-DD").isValid()) {
     return res.status(404).json({
       ok: false,
       message: "La fecha máxima no es valida",
@@ -137,7 +137,40 @@ const getSales = async (req, res) => {
     total,
   });
 };
+const totalByDate ={
+  check: (req, res, next) => {},
+
+  do: async (req, res, next) => {
+    const today = new Date();
+    const { from } = req.query;
+    let date = moment(moment.now());
+    if(from === "day"){
+      date = date.subtract(1, "d").format("YYYY-MM-DD")
+    }
+    if(from === "week"){
+      date = date.subtract(15, "d").format("YYYY-MM-DD")
+    }
+    if(from === "month"){
+      date = date.subtract(1, "month").format("YYYY-MM-DD")
+    }
+    if(from === "year"){
+      date = date.subtract(1, "year").format("YYYY-MM-DD")
+    }
+    console.log("date", date)
+    const sales = await Sale.aggregate([
+      // First Stage
+      {
+        $match: { createdAt: { $gte: new Date(date), $lt: today } },
+      },
+    ]);
+    const total = sales.reduce((acumulator, value)=>{
+      return  Number(acumulator) + Number(value.total)
+    }, 0)
+    console.log("total", total)
+  },
+};
 module.exports = {
   createSale,
   getSales,
+  totalByDate,
 };
