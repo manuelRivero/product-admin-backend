@@ -30,11 +30,11 @@ const getProducts = async (req, res) => {
   const search = req.query.search ? { name: regex } : {};
   const minPrice = req.query.minPrice
     ? { $lte: Number(req.query.minPrice) }
-    : {};
+    : null;
   const maxPrice = req.query.maxPrice
     ? { $lte: Number(req.query.maxPrice) }
-    : {};
-  const priceQuery = { price: { ...minPrice, ...maxPrice } };
+    : null;
+  const priceQuery = minPrice && maxPrice ? { price: { ...minPrice, ...maxPrice } } : {};
   const tags = req.query.tags
     ? { "tags.name": { $in: JSON.parse(req.query.tags) } }
     : {};
@@ -54,7 +54,6 @@ const getProducts = async (req, res) => {
       product.liked = false;
     }
   });
-  console.log("products", products)
 
   res.json({
     ok: true,
