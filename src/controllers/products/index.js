@@ -83,13 +83,26 @@ const likeProduct = {
         message: "El producto no existe",
       });
     }
-    console.log("target product", targetProduct);
+
     const targetUser = await User.findById(uid);
-    targetUser.likedProducts = [...targetUser.likedProducts, targetProduct._id];
-    await targetUser.save()
+    if (like) {
+      if (!targetUser.likedProducts.includes(targetProduct._id)) {
+        console.log("producto incluido");
+        targetUser.likedProducts = [
+          ...targetUser.likedProducts,
+          targetProduct._id,
+        ];
+      }
+    } else {
+      targetUser.likedProducts = targetUser.likedProducts.filter(
+        (e) => e === targetProduct._id
+      );
+    }
+    await targetUser.save();
     res.status(200).json({
-      ok:true
-    })
+      ok: true,
+      targetUser,
+    });
   },
 };
 
