@@ -167,6 +167,10 @@ const totalByDate ={
       return  Number(acumulator) + Number(value.total)
     }, 0)
     console.log("total", total)
+    res.status(200).json({
+      ok:true,
+      total
+    })
   },
 };
 module.exports = {
