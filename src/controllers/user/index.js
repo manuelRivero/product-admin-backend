@@ -40,7 +40,7 @@ const createUser = async (req, res) => {
     const salt = bcript.genSaltSync();
     user.password = bcript.hashSync(body.password, salt);
     const token = await generatejWT(user.id);
-    const {password, ...rest} = user
+    const { password, ...rest } = user;
     await user.save();
     res.json({
       ok: true,
@@ -90,7 +90,10 @@ const getUsers = async (req, res) => {
     ? { $lte: new Date(new Date(query.maxDate).setHours(23, 59)) }
     : {};
   const minDate = query.minDate ? { $gte: new Date(query.minDate) } : {};
-  const dateQuery = { createdAt: { ...maxDate, ...minDate } };
+  const dateQuery =
+    query.minDate && query.maxDate
+      ? { createdAt: { ...maxDate, ...minDate } }
+      : {};
   console.log("date query", dateQuery);
   const [users, total] = await Promise.all([
     User.find({ ...search, ...dateQuery }),
