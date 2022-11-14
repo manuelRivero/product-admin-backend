@@ -137,39 +137,66 @@ const getSales = async (req, res) => {
     total,
   });
 };
-const totalByDate ={
+const totalByDate = {
   check: (req, res, next) => {},
 
   do: async (req, res, next) => {
     const today = new Date();
     const { from } = req.query;
     let date = moment(moment.now());
-    if(from === "day"){
-      date = date.subtract(1, "d").format("YYYY-MM-DD")
+    if (from === "day") {
+      date = date.subtract(1, "d").format("YYYY-MM-DD");
     }
-    if(from === "week"){
-      date = date.subtract(15, "d").format("YYYY-MM-DD")
+    if (from === "week") {
+      date = date.subtract(15, "d").format("YYYY-MM-DD");
     }
-    if(from === "month"){
-      date = date.subtract(1, "month").format("YYYY-MM-DD")
+    if (from === "month") {
+      date = date.subtract(1, "month").format("YYYY-MM-DD");
     }
-    if(from === "year"){
-      date = date.subtract(1, "year").format("YYYY-MM-DD")
+    if (from === "year") {
+      date = date.subtract(1, "year").format("YYYY-MM-DD");
     }
-    console.log("date", date)
     const sales = await Sale.aggregate([
       // First Stage
       {
         $match: { createdAt: { $gte: new Date(date), $lt: today } },
       },
     ]);
-    const total = sales.reduce((acumulator, value)=>{
-      return  Number(acumulator) + Number(value.total)
-    }, 0)
-    console.log("total", total)
+    const total = sales.reduce((acumulator, value) => {
+      return Number(acumulator) + Number(value.total);
+    }, 0);
+    console.log("total", total);
+    res.status(200).json({
+      ok: true,
+      total,
+    });
+  },
+};
+const dailySales = {
+  check: () => {},
+  do: async (req, res, next) => {
+    let date = moment(moment.now()).subtract(7, "d").format("YYYY-MM-DD");
+    const sales = await Sale.aggregate([
+      { $match: { createdAt: { $gte: new Date(date) } } },
+      {
+        $group: {
+          _id: { $dayOfWeek: "$createdAt" },
+        total:{$sum:"$total"}},
+      },
+      {$project:{
+        _id:0,
+        total:1,
+        day: "$_id"
+      }},
+      {$sort:{
+        day:1
+      }}
+
+    ]);
+    console.log("sales by day", sales);
     res.status(200).json({
       ok:true,
-      total
+      sales
     })
   },
 };
@@ -177,4 +204,5 @@ module.exports = {
   createSale,
   getSales,
   totalByDate,
+  dailySales,
 };
