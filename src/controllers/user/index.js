@@ -96,7 +96,7 @@ const getUsers = async (req, res) => {
       : {};
   console.log("date query", dateQuery);
   const [users, total] = await Promise.all([
-    User.find({ ...search, ...dateQuery }),
+    User.find({ ...search, ...dateQuery, role: "user" }),
     User.find({ ...search, ...dateQuery }).count(),
   ]);
 
