@@ -148,7 +148,7 @@ const totalByDate = {
       date = date.subtract(1, "d").format("YYYY-MM-DD");
     }
     if (from === "week") {
-      date = date.subtract(15, "d").format("YYYY-MM-DD");
+      date = date.subtract(7, "d").format("YYYY-MM-DD");
     }
     if (from === "month") {
       date = date.subtract(1, "month").format("YYYY-MM-DD");
@@ -200,6 +200,7 @@ const dailySales = {
     })
   },
 };
+
 module.exports = {
   createSale,
   getSales,
