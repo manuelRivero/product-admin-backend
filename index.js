@@ -4,6 +4,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const fileUpload = require("express-fileupload");
 const http = require("http");
+import socketEvents from "./src/socket/index.js"
 
 require("dotenv").config();
 
@@ -31,8 +32,8 @@ app.use("/api/notifications", require("./src/notifications/route"));
 
 
 const httpServer = http.createServer(app);
-export const io = new Server(httpServer, { cors: { origin: '*' } });
-
+const io = new Server(httpServer, { cors: { origin: '*' } });
+socketEvents(io)
 httpServer.listen(5000, () => {
   console.log("server running on port 5000");
 });

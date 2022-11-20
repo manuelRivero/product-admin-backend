@@ -1,10 +1,13 @@
-import { io } from "./../../index.js";
-import Notifications from "./../";
+import Notifications from "./../notifications/model";
 
-io.on("notification-readed", (notifications) => {
-  notifications.forEach(async (element) => {
-    await Notifications.findByIdAndUpdate(element.id, {
-      readed: true,
+export default (io) => {
+  io.on("connection", (socket) => {
+    socket.on("notification-readed", (notifications) => {
+      notifications.forEach(async (element) => {
+        await Notifications.findByIdAndUpdate(element._id, {
+          readed: true,
+        });
+      });
     });
   });
-});
+};
