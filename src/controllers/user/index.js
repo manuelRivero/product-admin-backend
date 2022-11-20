@@ -1,9 +1,11 @@
+import { io } from "./../../../index";
 const { v4: uuid } = require("uuid");
 const moment = require("moment");
 const bcript = require("bcryptjs");
 const path = require("path");
 
 const User = require("./../../models/user");
+import Notification from "./../../notifications/model.js";
 const { generatejWT } = require("../../helpers/auth");
 
 const createUser = async (req, res) => {
@@ -40,11 +42,23 @@ const createUser = async (req, res) => {
     const salt = bcript.genSaltSync();
     user.password = bcript.hashSync(body.password, salt);
     const token = await generatejWT(user.id);
-    const { password, ...rest } = user;
+    const { password, _doc } = user;
+    const notification = new Notification({
+      type: "USER_SUBSCRIPTION",
+      body: "Se ha registrado un nuevo usuario",
+      readed: false,
+    });
+    await notification.save();
     await user.save();
+    io.emit("user-subcription", _doc);
+    io.emit("notification", {
+      type: "USER_SUBSCRIPTION",
+      body: "Se ha registrado un nuevo usuario",
+      readed: false,
+    });
     res.json({
       ok: true,
-      user: rest,
+      user: _doc,
       token: token,
     });
   } catch (error) {
