@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Product = require("./../../models/product");
+const Sales = require("./../../models/sales");
 const User = require("./../../models/user");
 const jwt = require("jsonwebtoken");
 const validation = require("./../../helpers/validate");
@@ -105,9 +106,44 @@ const likeProduct = {
     });
   },
 };
+const topProducts = async (req, res) => {
 
+  const page = req.query.page || 0;
+
+  const topProducts = await Sales.aggregate([
+    
+    { $group: { _id: "$products" , count:{$sum:1}},  },
+    {
+      $lookup: {
+        from: "products",
+        localField: "_id",
+        foreignField: "_id",
+        as: "product_data"
+      },
+    },
+    {
+      "$sort": {
+        count: -1
+      }
+    },
+    {
+      $facet: {
+          metadata: [{$count: "count"}],
+          data: [{$skip:  page * 10}, {$limit: 10}]
+      }
+  }
+    
+  ]);
+  console.log("top products", topProducts);
+  res.json({
+    ok:true,
+    data: topProducts[0].data,
+    metadata:topProducts[0].metadata
+  })
+};
 module.exports = {
   createProduct,
   getProducts,
   likeProduct,
+  topProducts,
 };

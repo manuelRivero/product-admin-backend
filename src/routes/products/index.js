@@ -5,7 +5,7 @@ const router = Router();
 
 // controllers
 const {
-  createProduct, getProducts, likeProduct,
+  createProduct, getProducts, likeProduct,topProducts
 } = require("../../controllers/products");
 
 // validation
@@ -19,5 +19,6 @@ const { createProductSchema } = require("./../../schemas/products");
 router.get("/", getProducts);
 router.post("/", [schemaValidation(createProductSchema)], createProduct);
 router.post("/like/:id", [validateJWT], likeProduct.check, likeProduct.do);
+router.get("/topProducts", [validateJWT], topProducts);
 
 module.exports = router;
