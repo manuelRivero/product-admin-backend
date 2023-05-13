@@ -137,6 +137,30 @@ const getSales = async (req, res) => {
     total,
   });
 };
+const getMonthlySales = async (req, res) => {
+  const { query } = req;
+  const startOfMonth = moment(query.date, "DD-MM-YYYY").startOf("month");
+  const endOfMonth = moment(query.date, "DD-MM-YYYY").endOf("month");
+  
+  const dateQuery = {
+    createdAt: {
+      $gte: new Date(startOfMonth),
+      $lte: new Date(endOfMonth),
+    },
+  };
+  const [sales] = await Promise.all([
+    Sale.aggregate([
+      {
+        $match: { ...dateQuery },
+      },
+      { $group: { _id: "$createdAt", total: { $sum: "$total" } } },
+    ]),
+  ]);
+  res.status(200).json({
+    ok: true,
+    sales,
+  });
+};
 const totalByDate = {
   check: (req, res, next) => {},
 
@@ -181,23 +205,27 @@ const dailySales = {
       {
         $group: {
           _id: { $dayOfWeek: "$createdAt" },
-        total:{$sum:"$total"}},
+          total: { $sum: "$total" },
+        },
       },
-      {$project:{
-        _id:0,
-        total:1,
-        day: "$_id"
-      }},
-      {$sort:{
-        day:1
-      }}
-
+      {
+        $project: {
+          _id: 0,
+          total: 1,
+          day: "$_id",
+        },
+      },
+      {
+        $sort: {
+          day: 1,
+        },
+      },
     ]);
     console.log("sales by day", sales);
     res.status(200).json({
-      ok:true,
-      sales
-    })
+      ok: true,
+      sales,
+    });
   },
 };
 
@@ -206,4 +234,5 @@ module.exports = {
   getSales,
   totalByDate,
   dailySales,
+  getMonthlySales,
 };
