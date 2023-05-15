@@ -1,3 +1,4 @@
+const { string } = require("joi");
 const { Schema, model } = require("mongoose");
 
 const ProductSchema = Schema(
@@ -11,8 +12,14 @@ const ProductSchema = Schema(
       type: Number,
       required: true,
     },
-    img: {
-      type: String,
+    images: {
+      type: [
+        {
+          url: {
+            type: String,
+          },
+        },
+      ],
     },
     tags: {
       type: [
@@ -23,6 +30,9 @@ const ProductSchema = Schema(
           },
         },
       ],
+    },
+    description:{
+      type:String
     },
     stock: {
       type: Number,

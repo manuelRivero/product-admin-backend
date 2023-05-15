@@ -16,6 +16,7 @@ function validateBody(req, next, schema) {
   const { error, value } = schema.validate(req.body, options);
 
   if (error) {
+    console.log("validate error", error)
     const errorFormat = { name: "ValidationErrorCustom", errors: {} };
 
     for (let index in error.details) {
