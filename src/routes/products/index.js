@@ -10,6 +10,7 @@ const {
   likeProduct,
   topProducts,
   createProductsFromExcel,
+  createProductsImages
 } = require("../../controllers/products");
 
 // validation
@@ -25,6 +26,12 @@ router.post(
   [validateJWT],
   createProductsFromExcel.check,
   createProductsFromExcel.do
+);
+router.post(
+  "/productsImages",
+  [validateJWT],
+  createProductsImages.check,
+  createProductsImages.do
 );
 
 module.exports = router;

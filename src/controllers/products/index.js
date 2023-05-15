@@ -8,9 +8,13 @@ const Joi = require("joi");
 const { cloudinary } = require("./../../helpers/imageUpload");
 const ExcelJS = require("exceljs");
 var workbook = new ExcelJS.Workbook();
+var AdmZip = require("adm-zip");
+var fs = require("fs");
+const path = require("path");
 
 // schemas
 const { createProductSchema } = require("./../../schemas/products");
+const product = require("./../../models/product");
 
 const createProduct = {
   check: (req, res, next) => {
@@ -80,69 +84,80 @@ const createProductsFromExcel = {
       console.log("workSheet.rowCount", workSheet.rowCount);
       for (let i = 1; i <= workSheet.rowCount; i++) {
         const setProduct = async () => {
-            const currentRow = workSheet.getRow(i);
-            if (i === 1) return;
-            console.log("currentRow", currentRow);
-  
-            const rowImages = images.filter((e) => {
-              return e.range.tl.nativeRow === i - 1;
-            });
-            const mapedImages = rowImages.map((e) =>
-              workbook.getImage(+e.imageId)
-            );
-  
-            const resultUrl = await Promise.all(
-              mapedImages.map((element) => {
-                return new Promise((resolve, reject) => {
-                  cloudinary.uploader
-                    .upload_stream((err, res) => {
-                      if (err) {
-                        console.log(err);
-                      } else {
-                        // filteredBody.photo = result.url;
-                        resolve({ url: res.secure_url });
-                      }
-                    })
-                    .end(element.buffer);
-                });
-              })
-            );
-  
-            const productData = {
-              name: currentRow.getCell(1).value,
-              price: currentRow.getCell(2).value,
-              tags: currentRow
-                .getCell(3)
-                .value.split(",")
-                .map((e) => ({ name: e })),
-              description: currentRow.getCell(4).value,
-              stock: currentRow.getCell(5).value,
-              images: resultUrl,
-            };
-            console.log("productData", productData);
-            const product = new Product({ ...productData });
-            productList.push(product);            
-        }
-       await setProduct()
+          const currentRow = workSheet.getRow(i);
+          const productId = currentRow.getCell(1).value;
+          const productExist = await Product.findById(productId);
+          if (i === 1) return;
+          console.log("currentRow", currentRow);
+
+          const rowImages = images.filter((e) => {
+            return e.range.tl.nativeRow === i - 1;
+          });
+          const mapedImages = rowImages.map((e) =>
+            workbook.getImage(+e.imageId)
+          );
+
+          const resultUrl = await Promise.all(
+            mapedImages.map((element) => {
+              return new Promise((resolve, reject) => {
+                cloudinary.uploader
+                  .upload_stream((err, res) => {
+                    if (err) {
+                      console.log(err);
+                    } else {
+                      // filteredBody.photo = result.url;
+                      resolve({ url: res.secure_url });
+                    }
+                  })
+                  .end(element.buffer);
+              });
+            })
+          );
+
+          const productData = {
+            name: currentRow.getCell(2).value,
+            price: currentRow.getCell(3).value,
+            tags: currentRow
+              .getCell(4)
+              .value.split(",")
+              .map((e) => ({ name: e })),
+            description: currentRow.getCell(5).value,
+            stock: currentRow.getCell(6).value,
+            images: resultUrl,
+          };
+          // console.log("productData", productData);
+          if (productExist) {
+            productList.push({ newProduct: false, productExist, productData });
+          }
+          const product = new Product({ ...productData });
+          productList.push({ newProduct: true, product });
+        };
+        await setProduct();
       }
-        workSheet.eachRow(async (row, i) => {
-          
-          
-         
-      });
+      workSheet.eachRow(async (row, i) => {});
 
       const saveResponse = await Promise.all(
-        productList.map((product) => {
+        productList.map((e) => {
           return new Promise(async (resolve, reject) => {
-            try {
-              const response = await product.save();
+            if (e.newProduct) {
+              try {
+                const response = await e.product.save();
+                resolve(response);
+              } catch (error) {
+                console.log("error al guardar", error);
+                res.json({
+                  ok: false,
+                  error: "error al guardar",
+                });
+              }
+            } else {
+              const response = await e.productExist.updateOne(
+                { _id: e.productExist._id },
+                {
+                  ...e.productData,
+                }
+              );
               resolve(response);
-            } catch (error) {
-              console.log("error al guardar", error);
-              res.json({
-                ok: false,
-                error: "error al guardar",
-              });
             }
           });
         })
@@ -150,6 +165,46 @@ const createProductsFromExcel = {
       console.log("saveResponse", saveResponse);
       res.json({
         ok: true,
+      });
+    });
+  },
+};
+const createProductsImages = {
+  check: async (req, res, next) => {
+    if (!req.files?.zip) {
+      res.json({
+        true: false,
+        error: "El archivo zip es requerido",
+      });
+    } else {
+      next();
+    }
+  },
+  do: async (req, res, next) => {
+    const zip = new AdmZip(filePath);
+    zip.extractAllTo("./output");
+    fs.readdir("./output", (err, imagesFolder) => {
+      imagesFolder.forEach((subFolder) => {
+        fs.readdir("./output" + "/" + subFolder, (err, file) => {
+          file.forEach((e) => {
+            const fileId = e;
+            fs.readdir(
+              "./output" + "/" + subFolder + "/" + e,
+              async (err, image) => {
+                const product = await Product.findById(fileId);
+                const resultUrl = await Promise.all(
+                  image.map((element) => {
+                    return cloudinary.uploader.upload(
+                      `./output/${subFolder}/${e}/${element}`
+                    );
+                  })
+                );
+                product.images = resultUrl.map((e) => ({ url: e.secure_url }));
+                const response = await product.save();
+              }
+            );
+          });
+        });
       });
     });
   },
@@ -278,4 +333,5 @@ module.exports = {
   likeProduct,
   topProducts,
   createProductsFromExcel,
+  createProductsImages,
 };

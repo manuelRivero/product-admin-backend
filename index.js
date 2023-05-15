@@ -4,7 +4,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const fileUpload = require("express-fileupload");
 const http = require("http");
-import socketEvents from "./src/socket/index.js"
+import socketEvents from "./src/socket/index.js";
 
 require("dotenv").config();
 
@@ -20,7 +20,13 @@ app.use(bodyParser.urlencoded({ extended: false }));
 // parse application/json
 app.use(bodyParser.json());
 
-app.use(fileUpload({useTempFiles: true}));
+app.use(
+  fileUpload({
+    useTempFiles: true,
+    preserveExtension: true,
+    createParentPath: true,
+  })
+);
 
 dbConnection();
 
@@ -30,10 +36,9 @@ app.use("/api/sale", require("./src/routes/sales"));
 app.use("/api/user", require("./src/routes/users"));
 app.use("/api/notifications", require("./src/notifications/route"));
 
-
 const httpServer = http.createServer(app);
-const io = new Server(httpServer, { cors: { origin: '*' } });
-socketEvents(io)
+const io = new Server(httpServer, { cors: { origin: "*" } });
+socketEvents(io);
 httpServer.listen(5000, () => {
   console.log("server running on port 5000");
 });
