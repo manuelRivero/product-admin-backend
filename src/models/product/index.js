@@ -12,6 +12,12 @@ const ProductSchema = Schema(
       type: Number,
       required: true,
     },
+    status:{
+      available:{
+        type:Boolean,
+        default: false
+      }
+    },
     images: {
       type: [
         {
