@@ -1,10 +1,10 @@
+import socketEvents from "./src/socket/index.js";
 const express = require("express");
 const { Server } = require("socket.io");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const fileUpload = require("express-fileupload");
 const http = require("http");
-import socketEvents from "./src/socket/index.js";
 
 require("dotenv").config();
 
