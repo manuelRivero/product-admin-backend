@@ -1,11 +1,11 @@
-import { io } from "./../../../index";
+const io = require("./../../index");
 const { v4: uuid } = require("uuid");
 const moment = require("moment");
 const bcript = require("bcryptjs");
 const path = require("path");
 
 const User = require("./../../models/user");
-import Notification from "./../../notifications/model.js";
+const Notification = require("./../../notifications/model.js");
 const { generatejWT } = require("../../helpers/auth");
 
 const createUser = async (req, res) => {

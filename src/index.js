@@ -1,4 +1,4 @@
-import socketEvents from "./src/socket/index.js";
+const socketEvents = require("./socket/index.js");
 const express = require("express");
 const { Server } = require("socket.io");
 const cors = require("cors");
@@ -8,7 +8,7 @@ const http = require("http");
 
 require("dotenv").config();
 
-const { dbConnection } = require("./src/db");
+const { dbConnection } = require("./db");
 
 const app = express();
 
@@ -30,11 +30,11 @@ app.use(
 
 dbConnection();
 
-app.use("/api/auth", require("./src/routes/auth"));
-app.use("/api/products", require("./src/routes/products"));
-app.use("/api/sale", require("./src/routes/sales"));
-app.use("/api/user", require("./src/routes/users"));
-app.use("/api/notifications", require("./src/notifications/route"));
+app.use("/api/auth", require("./routes/auth"));
+app.use("/api/products", require("./routes/products"));
+app.use("/api/sale", require("./routes/sales"));
+app.use("/api/user", require("./routes/users"));
+app.use("/api/notifications", require("./notifications/route"));
 
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, { cors: { origin: "*" } });

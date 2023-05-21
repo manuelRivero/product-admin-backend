@@ -1,6 +1,6 @@
-import Notifications from "./../notifications/model";
+const Notifications = require("./../notifications/model");
 
-export default (io) => {
+module.exports = (io) => {
   io.on("connection", (socket) => {
     socket.on("notification-readed", (notifications) => {
       notifications.forEach(async (element) => {

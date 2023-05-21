@@ -18,4 +18,4 @@ const Notifications = Schema(
   { colection: "notifications", timestamps: true }
 );
 
-export default model("Notifications", Notifications);
+module.exports = model("Notifications", Notifications);
