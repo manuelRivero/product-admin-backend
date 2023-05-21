@@ -32,11 +32,5 @@
     "unrar": "^0.2.0",
     "uuid": "^9.0.0"
   },
-  "devDependencies": {
-    "@babel/cli": "^7.21.5",
-    "@babel/core": "^7.21.8",
-    "@babel/node": "^7.20.2",
-    "@babel/preset-env": "^7.21.5",
-    "babel-loader": "^9.1.0"
-  }
+  "devDependencies": {}
 }
