@@ -1,6 +1,6 @@
-import Notification from "./model.js";
+const Notification = require("./model.js");
 
-export const list = {
+const list = {
   do: async (req, res, next) => {
     const page = Number(req.query.page) || 0;
 
@@ -15,3 +15,7 @@ export const list = {
     });
   },
 };
+
+module.exports = {
+  list
+}
