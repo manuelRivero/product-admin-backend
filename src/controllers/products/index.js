@@ -299,7 +299,15 @@ const topProducts = async (req, res) => {
   const page = req.query.page || 0;
 
   const topProducts = await Sales.aggregate([
-    { $group: { _id: "$products", count: { $sum: 1 } } },
+    { $unwind: "$products" },
+    {
+      $group: {
+        _id: "$products._id",
+        count: {
+          $sum: "$products.quantity",
+        },
+      },
+    },
     {
       $lookup: {
         from: "products",
@@ -308,19 +316,19 @@ const topProducts = async (req, res) => {
         as: "product_data",
       },
     },
-    {
-      $sort: {
-        count: -1,
-      },
-    },
+
     {
       $facet: {
         metadata: [{ $count: "count" }],
-        data: [{ $skip: page * 10 }, { $limit: 10 }],
+        data: [
+          { $skip: page * 10 },
+          { $limit: 10 },
+          { $sort: { "productData.price": -1 } },
+        ],
       },
     },
   ]);
-  console.log("top products", topProducts);
+
   res.json({
     ok: true,
     data: topProducts[0].data,
