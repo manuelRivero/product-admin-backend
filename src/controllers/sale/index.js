@@ -56,11 +56,11 @@ const createSale = async (req, res) => {
     let discount = 0;
     if (product.discount) {
       discount = (product.price * product.discount) / 100;
-      return total + (product.price - discount) * Number(element.quantity);
+      return await total + (product.price - discount) * Number(element.quantity);
     } else {
-      return total + product.price * Number(element.quantity);
+      return await total + product.price * Number(element.quantity);
     }
-  }, 0);
+  }, Promise.resolve(0));
 
   const sale = new Sale({
     products: products.map((e) => {
@@ -78,7 +78,9 @@ const createSale = async (req, res) => {
       ok: true,
       sale: sale,
     });
-  } catch (error) {}
+  } catch (error) {
+    console.log("sale error", error)
+  }
 };
 const getSales = async (req, res) => {
   const { query } = req;
@@ -141,7 +143,7 @@ const getMonthlySales = async (req, res) => {
   const { query } = req;
   const startOfMonth = moment(query.date, "DD-MM-YYYY").startOf("month");
   const endOfMonth = moment(query.date, "DD-MM-YYYY").endOf("month");
-  
+
   const dateQuery = {
     createdAt: {
       $gte: new Date(startOfMonth),
