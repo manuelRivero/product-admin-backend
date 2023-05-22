@@ -7,6 +7,7 @@ const router = Router();
 const {
   createProduct,
   getProducts,
+  getAdminProducts,
   likeProduct,
   topProducts,
   createProductsFromExcel,
@@ -18,6 +19,7 @@ const { validateJWT } = require("../../middleware/validateJWT");
 
 // routes
 router.get("/", getProducts);
+router.get("/admin-products", getAdminProducts);
 router.post("/", createProduct.check, createProduct.do);
 router.post("/like/:id", [validateJWT], likeProduct.check, likeProduct.do);
 router.get("/topProducts", [validateJWT], topProducts);

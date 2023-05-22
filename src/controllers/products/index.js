@@ -255,6 +255,39 @@ const getProducts = async (req, res) => {
   });
 };
 
+const getAdminProducts = async (req, res) => {
+  
+
+  const page = Number(req.query.page) || 0;
+  const regex = new RegExp(req.query.search, "i");
+  const search = req.query.search ? { name: regex } : {};
+  const minPrice = req.query.minPrice
+    ? { $lte: Number(req.query.minPrice) }
+    : null;
+  const maxPrice = req.query.maxPrice
+    ? { $lte: Number(req.query.maxPrice) }
+    : null;
+  const priceQuery =
+    minPrice && maxPrice ? { price: { ...minPrice, ...maxPrice } } : {};
+  const tags = req.query.tags
+    ? { "tags.name": { $in: JSON.parse(req.query.tags) } }
+    : {};
+
+  let [products, count] = await Promise.all([
+    Product.find({ ...search, ...tags, ...priceQuery })
+      .skip(page * 10)
+      .limit(10)
+      .lean(),
+    Product.find({ ...search, ...tags, ...priceQuery }).count(),
+  ]);
+
+  res.json({
+    ok: true,
+    data:products,
+    pageInfo: count
+  });
+};
+
 const likeProduct = {
   check: (req, res, next) => {
     const schema = Joi.object({
@@ -342,4 +375,5 @@ module.exports = {
   topProducts,
   createProductsFromExcel,
   createProductsImages,
+  getAdminProducts
 };
