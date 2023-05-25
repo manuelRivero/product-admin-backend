@@ -79,40 +79,15 @@ const createProductsFromExcel = {
     const filePath = req.files.excel.tempFilePath;
     workbook.xlsx.readFile(filePath).then(async function () {
       var workSheet = workbook.getWorksheet("productos");
-      const images = workSheet.getImages();
       const productList = [];
-      console.log("workSheet.rowCount", workSheet.rowCount);
+
       for (let i = 1; i <= workSheet.rowCount; i++) {
         const setProduct = async () => {
+          if (i === 1) return;
           const currentRow = workSheet.getRow(i);
           const productId = currentRow.getCell(1).value;
+          console.log("productId", productId)
           const productExist = await Product.findById(productId);
-          if (i === 1) return;
-          console.log("currentRow", currentRow);
-
-          const rowImages = images.filter((e) => {
-            return e.range.tl.nativeRow === i - 1;
-          });
-          const mapedImages = rowImages.map((e) =>
-            workbook.getImage(+e.imageId)
-          );
-
-          const resultUrl = await Promise.all(
-            mapedImages.map((element) => {
-              return new Promise((resolve, reject) => {
-                cloudinary.uploader
-                  .upload_stream((err, res) => {
-                    if (err) {
-                      console.log(err);
-                    } else {
-                      // filteredBody.photo = result.url;
-                      resolve({ url: res.secure_url });
-                    }
-                  })
-                  .end(element.buffer);
-              });
-            })
-          );
 
           const productData = {
             name: currentRow.getCell(2).value,
@@ -123,7 +98,6 @@ const createProductsFromExcel = {
               .map((e) => ({ name: e })),
             description: currentRow.getCell(5).value,
             stock: currentRow.getCell(6).value,
-            images: resultUrl,
           };
           // console.log("productData", productData);
           if (productExist) {
@@ -134,7 +108,6 @@ const createProductsFromExcel = {
         };
         await setProduct();
       }
-      workSheet.eachRow(async (row, i) => {});
 
       const saveResponse = await Promise.all(
         productList.map((e) => {
@@ -162,7 +135,6 @@ const createProductsFromExcel = {
           });
         })
       );
-      console.log("saveResponse", saveResponse);
       res.json({
         ok: true,
       });
