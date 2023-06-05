@@ -79,15 +79,12 @@ const createProductsFromExcel = {
     const filePath = req.files.excel.tempFilePath;
     workbook.xlsx.readFile(filePath).then(async function () {
       var workSheet = workbook.getWorksheet("productos");
-      const productList = [];
 
       for (let i = 1; i <= workSheet.rowCount; i++) {
         const setProduct = async () => {
           if (i === 1) return;
           const currentRow = workSheet.getRow(i);
           const productId = currentRow.getCell(1).value;
-          console.log("productId", productId)
-          const productExist = await Product.findById(productId);
 
           const productData = {
             name: currentRow.getCell(2).value,
@@ -99,42 +96,20 @@ const createProductsFromExcel = {
             description: currentRow.getCell(5).value,
             stock: currentRow.getCell(6).value,
           };
-          // console.log("productData", productData);
-          if (productExist) {
-            productList.push({ newProduct: false, productExist, productData });
+
+          if (productId) {
+            console.log("id case")
+             await Product.findOneAndUpdate({ _id: productId }, {...productData});
+          } else{
+            console.log("new product case")
+            const product = new Product({ ...productData });
+            await product.save();
           }
-          const product = new Product({ ...productData });
-          productList.push({ newProduct: true, product });
+
         };
         await setProduct();
       }
 
-      const saveResponse = await Promise.all(
-        productList.map((e) => {
-          return new Promise(async (resolve, reject) => {
-            if (e.newProduct) {
-              try {
-                const response = await e.product.save();
-                resolve(response);
-              } catch (error) {
-                console.log("error al guardar", error);
-                res.json({
-                  ok: false,
-                  error: "error al guardar",
-                });
-              }
-            } else {
-              const response = await e.productExist.updateOne(
-                { _id: e.productExist._id },
-                {
-                  ...e.productData,
-                }
-              );
-              resolve(response);
-            }
-          });
-        })
-      );
       res.json({
         ok: true,
       });
@@ -153,6 +128,7 @@ const createProductsImages = {
     }
   },
   do: async (req, res, next) => {
+    const filePath = req.files.zip.tempFilePath
     const zip = new AdmZip(filePath);
     zip.extractAllTo("./output");
     fs.readdir("./output", (err, imagesFolder) => {
@@ -179,6 +155,9 @@ const createProductsImages = {
         });
       });
     });
+    res.json({
+      ok:true
+    })
   },
 };
 const getProducts = async (req, res) => {
@@ -228,8 +207,6 @@ const getProducts = async (req, res) => {
 };
 
 const getAdminProducts = async (req, res) => {
-  
-
   const page = Number(req.query.page) || 0;
   const regex = new RegExp(req.query.search, "i");
   const search = req.query.search ? { name: regex } : {};
@@ -255,8 +232,8 @@ const getAdminProducts = async (req, res) => {
 
   res.json({
     ok: true,
-    data:products,
-    pageInfo: count
+    data: products,
+    pageInfo: count,
   });
 };
 
@@ -347,5 +324,5 @@ module.exports = {
   topProducts,
   createProductsFromExcel,
   createProductsImages,
-  getAdminProducts
+  getAdminProducts,
 };
