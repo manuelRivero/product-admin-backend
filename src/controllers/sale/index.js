@@ -56,9 +56,11 @@ const createSale = async (req, res) => {
     let discount = 0;
     if (product.discount) {
       discount = (product.price * product.discount) / 100;
-      return await total + (product.price - discount) * Number(element.quantity);
+      return (
+        (await total) + (product.price - discount) * Number(element.quantity)
+      );
     } else {
-      return await total + product.price * Number(element.quantity);
+      return (await total) + product.price * Number(element.quantity);
     }
   }, Promise.resolve(0));
 
@@ -79,7 +81,7 @@ const createSale = async (req, res) => {
       sale: sale,
     });
   } catch (error) {
-    console.log("sale error", error)
+    console.log("sale error", error);
   }
 };
 const getSales = async (req, res) => {
@@ -201,32 +203,41 @@ const totalByDate = {
 const dailySales = {
   check: () => {},
   do: async (req, res, next) => {
-    let date = moment(moment.now()).subtract(7, "d").format("YYYY-MM-DD");
+    let date = req.query.from;
     const sales = await Sale.aggregate([
-      { $match: { createdAt: { $gte: new Date(date) } } },
+      {
+        $match: {
+          createdAt: {
+            $lte: moment(new Date(date)).endOf("day").toDate(),
+            $gte: moment(new Date(date)).startOf("day").toDate(),
+          },
+        },
+      },
+      { $unwind: "$products" },
       {
         $group: {
-          _id: { $dayOfWeek: "$createdAt" },
-          total: { $sum: "$total" },
+          _id: "$products._id",
+          quantity:{ $sum :"$products.quantity"}
         },
       },
       {
-        $project: {
-          _id: 0,
-          total: 1,
-          day: "$_id",
-        },
-      },
-      {
-        $sort: {
-          day: 1,
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "product_data",
         },
       },
     ]);
-    console.log("sales by day", sales);
+
+    let total = 0
+    sales.forEach(sale => {
+      total = total + parseInt(sale.product_data[0].price) * parseInt(sale.quantity)
+    })
+    
     res.status(200).json({
       ok: true,
-      sales,
+      total
     });
   },
 };

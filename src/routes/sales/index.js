@@ -7,7 +7,6 @@ const router = Router();
 
 router.post("/", [validateJWT], createSale);
 router.get("/", [validateJWT], getSales);
-router.get("/byDate", [validateJWT], totalByDate.do);
 router.get("/dailySales", [validateJWT], dailySales.do);
 router.get("/monthlySales", [validateJWT], getMonthlySales);
 
