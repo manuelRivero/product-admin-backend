@@ -299,17 +299,28 @@ const topProducts = async (req, res) => {
       },
     },
 
+    { $unwind:"$product_data"},
+    {
+      $project: {
+        _id: 0, productData: "$product_data",
+        count:1
+      }
+    },
+
     {
       $facet: {
         metadata: [{ $count: "count" }],
         data: [
           { $skip: page * 10 },
           { $limit: 10 },
-          { $sort: { "productData.price": -1 } },
+          { $sort: { "product_data.price": -1 } },
         ],
       },
     },
   ]);
+
+  console.log("top products",topProducts[0].data)
+  console.log("top products metadata",topProducts[0].metadata)
 
   res.json({
     ok: true,
