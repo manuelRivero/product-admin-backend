@@ -204,12 +204,13 @@ const dailySales = {
   check: () => {},
   do: async (req, res, next) => {
     let date = req.query.from;
+ 
     const sales = await Sale.aggregate([
       {
         $match: {
           createdAt: {
-            $lte: moment(new Date(date)).endOf("day").toDate(),
-            $gte: moment(new Date(date)).startOf("day").toDate(),
+            $lte: moment(date).utc().endOf("date").toDate(),
+            $gte: moment(date).utc().startOf("date").toDate(),
           },
         },
       },
@@ -217,7 +218,7 @@ const dailySales = {
       {
         $group: {
           _id: "$products._id",
-          quantity:{ $sum :"$products.quantity"}
+          quantity:{ $sum : {"$toDouble":"$products.quantity"}}
         },
       },
       {
@@ -228,11 +229,19 @@ const dailySales = {
           as: "product_data",
         },
       },
+      { $unwind:"$product_data"},
+      {$project:{
+        _id:1,
+        quantity:1,
+        product_data: "$product_data"
+      }}
+
     ]);
 
     let total = 0
+    console.log("sales", sales)
     sales.forEach(sale => {
-      total = total + parseInt(sale.product_data[0].price) * parseInt(sale.quantity)
+      total = total + parseInt(sale.product_data.price) * parseInt(sale.quantity)
     })
     
     res.status(200).json({
