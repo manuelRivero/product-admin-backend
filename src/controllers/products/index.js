@@ -26,6 +26,7 @@ const createProduct = {
       });
     } else {
       req.body.tags = JSON.parse(body.tags);
+      req.body.status = JSON.parse(body.status);
       validation.validateBody(req, next, createProductSchema);
     }
   },
@@ -64,6 +65,63 @@ const createProduct = {
     }
   },
 };
+const editProduct = {
+  check: async (req, res, next) => {
+    req.body.tags = JSON.parse(req.body.tags);
+    req.body.status = JSON.parse(req.body.status);
+    validation.validateBody(req, next, createProductSchema);
+  },
+  do: async (req, res) => {
+    const {id }= req.params;
+    if(!id){
+      res.status(400).json({ok:false, error:"No hay id en la petición"})
+    }
+    let productImages=[]
+    if(req.files){
+      if (files.productImage.length) {
+        for (let element of files.productImage) {
+          try {
+            const imageUrl = await cloudinary.uploader.upload(
+              element.tempFilePath,
+              { folder: "products" }
+            );
+            productImages.push({ url: imageUrl.secure_url });
+          } catch {}
+        }
+      } else {
+        console.log("else case");
+        try {
+          const imageUrl = await cloudinary.uploader.upload(
+            files.productImage.tempFilePath,
+            { folder: "products" }
+          );
+          productImages.push({ url: imageUrl.secure_url });
+        } catch {}
+      }
+    }
+    const product = await Product.findById(id)
+    console.log("images", product.images)
+  
+      product.name=req.body.name;
+      product.price= req.body.price;
+      product.description= req.body.description;
+      product.stock= req.body.stock;
+      product.images = [...product.images,...productImages]
+      product.tags = req.body.tags;
+      product.status.available = req.body.status.available
+
+    const productSave = await product.save()
+
+    console.log("product",product)
+    console.log("productSave",productSave)
+
+    res.json({
+      ok:true,
+      product
+    })
+
+  }
+};
 const createProductsFromExcel = {
   check: async (req, res, next) => {
     if (!req.files?.excel) {
@@ -98,14 +156,16 @@ const createProductsFromExcel = {
           };
 
           if (productId) {
-            console.log("id case")
-             await Product.findOneAndUpdate({ _id: productId }, {...productData});
-          } else{
-            console.log("new product case")
+            console.log("id case");
+            await Product.findOneAndUpdate(
+              { _id: productId },
+              { ...productData }
+            );
+          } else {
+            console.log("new product case");
             const product = new Product({ ...productData });
             await product.save();
           }
-
         };
         await setProduct();
       }
@@ -128,7 +188,7 @@ const createProductsImages = {
     }
   },
   do: async (req, res, next) => {
-    const filePath = req.files.zip.tempFilePath
+    const filePath = req.files.zip.tempFilePath;
     const zip = new AdmZip(filePath);
     zip.extractAllTo("./output");
     fs.readdir("./output", (err, imagesFolder) => {
@@ -156,8 +216,8 @@ const createProductsImages = {
       });
     });
     res.json({
-      ok:true
-    })
+      ok: true,
+    });
   },
 };
 const getProducts = async (req, res) => {
@@ -206,6 +266,38 @@ const getProducts = async (req, res) => {
   });
 };
 
+const getProductDetail = {
+  do: async (req, res) => {
+    const { id } = req.query;
+    if (!id) {
+      res.status(400).json({
+        ok: false,
+        error: "No hay id en la petición",
+      });
+    }
+
+    const product = await Product.aggregate([
+      {
+        $match: { _id: mongoose.Types.ObjectId(id) },
+      },
+    ]);
+
+    console.log("product", product);
+
+    if (product.length > 0) {
+      res.json({
+        ok: true,
+        product: product[0],
+      });
+    } else {
+      res.status(404).json({
+        ok: false,
+        error: "Id invalido",
+      });
+    }
+  },
+};
+
 const getAdminProducts = async (req, res) => {
   const page = Number(req.query.page) || 0;
   const regex = new RegExp(req.query.search, "i");
@@ -242,6 +334,7 @@ const likeProduct = {
     const schema = Joi.object({
       like: Joi.boolean().required(),
     });
+
     validation.validateBody(req, next, schema);
   },
   do: async (req, res) => {
@@ -299,12 +392,13 @@ const topProducts = async (req, res) => {
       },
     },
 
-    { $unwind:"$product_data"},
+    { $unwind: "$product_data" },
     {
       $project: {
-        _id: 0, productData: "$product_data",
-        count:1
-      }
+        _id: 0,
+        productData: "$product_data",
+        count: 1,
+      },
     },
 
     {
@@ -319,8 +413,8 @@ const topProducts = async (req, res) => {
     },
   ]);
 
-  console.log("top products",topProducts[0].data)
-  console.log("top products metadata",topProducts[0].metadata)
+  console.log("top products", topProducts[0].data);
+  console.log("top products metadata", topProducts[0].metadata);
 
   res.json({
     ok: true,
@@ -336,4 +430,6 @@ module.exports = {
   createProductsFromExcel,
   createProductsImages,
   getAdminProducts,
+  getProductDetail,
+  editProduct
 };
