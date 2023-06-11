@@ -69,17 +69,18 @@ const editProduct = {
   check: async (req, res, next) => {
     req.body.tags = JSON.parse(req.body.tags);
     req.body.status = JSON.parse(req.body.status);
+    req.body.deletedImages = JSON.parse(req.body.deletedImages);
     validation.validateBody(req, next, createProductSchema);
   },
   do: async (req, res) => {
-    const {id }= req.params;
-    if(!id){
-      res.status(400).json({ok:false, error:"No hay id en la petición"})
+    const { id } = req.params;
+    if (!id) {
+      res.status(400).json({ ok: false, error: "No hay id en la petición" });
     }
-    let productImages=[]
-    if(req.files){
-      if (files.productImage.length) {
-        for (let element of files.productImage) {
+    let productImages = [];
+    if (req.files) {
+      if (req.files.productImage.length) {
+        for (let element of req.files.productImage) {
           try {
             const imageUrl = await cloudinary.uploader.upload(
               element.tempFilePath,
@@ -92,35 +93,49 @@ const editProduct = {
         console.log("else case");
         try {
           const imageUrl = await cloudinary.uploader.upload(
-            files.productImage.tempFilePath,
+            req.files.productImage.tempFilePath,
             { folder: "products" }
           );
           productImages.push({ url: imageUrl.secure_url });
         } catch {}
       }
     }
-    const product = await Product.findById(id)
-    console.log("images", product.images)
-  
-      product.name=req.body.name;
-      product.price= req.body.price;
-      product.description= req.body.description;
-      product.stock= req.body.stock;
-      product.images = [...product.images,...productImages]
-      product.tags = req.body.tags;
-      product.status.available = req.body.status.available
+    const product = await Product.findById(id);
+    if (req.body.deletedImages) {
+      product.images = product.images.filter((image, index) => {
+        const deleteImages = req.body.deletedImages;
+        const targetImage = deleteImages.find((e) => {
+          console.log("index", index);
+          console.log("e", e);
+          return index === e;
+        });
+        console.log("target image", targetImage)
+        if (targetImage >= 0) {
+          return false;
+        } else {
+          return true;
+        }
+      });
+    }
+    console.log("product images", product.images )
+    product.name = req.body.name;
+    product.price = req.body.price;
+    product.description = req.body.description;
+    product.stock = req.body.stock;
+    product.images = [...product.images, ...productImages];
+    product.tags = req.body.tags;
+    product.status.available = req.body.status.available;
 
-    const productSave = await product.save()
+    const productSave = await product.save();
 
-    console.log("product",product)
-    console.log("productSave",productSave)
+    console.log("product", product);
+    console.log("productSave", productSave);
 
     res.json({
-      ok:true,
-      product
-    })
-
-  }
+      ok: true,
+      product,
+    });
+  },
 };
 const createProductsFromExcel = {
   check: async (req, res, next) => {
@@ -431,5 +446,5 @@ module.exports = {
   createProductsImages,
   getAdminProducts,
   getProductDetail,
-  editProduct
+  editProduct,
 };
