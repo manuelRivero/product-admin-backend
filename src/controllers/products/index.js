@@ -14,7 +14,6 @@ const path = require("path");
 
 // schemas
 const { createProductSchema } = require("./../../schemas/products");
-const product = require("./../../models/product");
 
 const createProduct = {
   check: (req, res, next) => {
@@ -109,7 +108,7 @@ const editProduct = {
           console.log("e", e);
           return index === e;
         });
-        console.log("target image", targetImage)
+        console.log("target image", targetImage);
         if (targetImage >= 0) {
           return false;
         } else {
@@ -117,7 +116,7 @@ const editProduct = {
         }
       });
     }
-    console.log("product images", product.images )
+    console.log("product images", product.images);
     product.name = req.body.name;
     product.price = req.body.price;
     product.description = req.body.description;
@@ -205,44 +204,59 @@ const createProductsImages = {
   do: async (req, res, next) => {
     const filePath = req.files.zip.tempFilePath;
     const zip = new AdmZip(filePath);
+    let productWithErrors = [];
     zip.extractAllTo("./output");
-    fs.readdir("./output", (err, imagesFolder) => {
-      imagesFolder.forEach((subFolder) => {
-        fs.readdir("./output" + "/" + subFolder, (err, file) => {
-          file.forEach((e) => {
-            const fileId = e;
-            fs.readdir(
-              "./output" + "/" + subFolder + "/" + e,
-              async (err, image) => {
-                const product = await Product.findById(fileId);
-                const resultUrl = await Promise.all(
-                  image.map((element) => {
-                    return cloudinary.uploader.upload(
-                      `./output/${subFolder}/${e}/${element}`
-                    );
-                  })
-                );
-                product.images = resultUrl.map((e) => ({ url: e.secure_url }));
-                const response = await product.save();
-              }
+  
+    const imagesFolder = await fs.promises.readdir("./output");
+    for (let subFolder of imagesFolder) {
+      const files = await fs.promises.readdir(`./output/${subFolder}`);
+      for (let file of files) {
+        const fileId = file;
+        try {
+          if (!mongoose.isValidObjectId(fileId)) {
+            productWithErrors.push(fileId);
+            console.log("error en id:", fileId);
+            continue;
+          }
+  
+          const product = await Product.findById(mongoose.Types.ObjectId(fileId));
+          if (!product) {
+            console.log("no existe el producto:", fileId);
+            productWithErrors.push(fileId);
+            continue;
+          }
+  
+          const images = await fs.promises.readdir(
+            `./output/${subFolder}/${fileId}`
+          );
+          const uploadPromises = images.map((element) => {
+            return cloudinary.uploader.upload(
+              `./output/${subFolder}/${fileId}/${element}`
             );
           });
-        });
-      });
-    });
+          const resultUrl = await Promise.all(uploadPromises);
+  
+          product.images = resultUrl.map((e) => ({
+            url: e.secure_url,
+          }));
+          await product.save();
+        } catch (error) {
+          console.log("error", error);
+          console.log("error al subir imagenes para el id:" + fileId);
+          productWithErrors.push(fileId);
+        }
+      }
+    }
+  
+    console.log("productWithErrors", productWithErrors);
     res.json({
       ok: true,
+      productWithErrors,
     });
-  },
+  }  
 };
 const getProducts = async (req, res) => {
-  const token = req.get("x-token");
-  const user = {};
-  if (token) {
-    const { uid } = jwt.verify(token, process.env.SECRETORPRIVATEKEY);
-    user._id = uid;
-  }
-
+  console.log("req.query.search", req.query.search);
   const page = Number(req.query.page) || 0;
   const regex = new RegExp(req.query.search, "i");
   const search = req.query.search ? { name: regex } : {};
@@ -325,10 +339,11 @@ const getAdminProducts = async (req, res) => {
     : null;
   const priceQuery =
     minPrice && maxPrice ? { price: { ...minPrice, ...maxPrice } } : {};
-  const tags = req.query.tags
-    ? { "tags.name": { $in: JSON.parse(req.query.tags) } }
+  const tagArray = req.query.tags ? req.query.tags.split(",") : null;
+  const tags = tagArray
+    ? { "tags.name": { $in: tagArray.map((e) => new RegExp(e, "i")) } }
     : {};
-
+  console.log("tags", tags);
   let [products, count] = await Promise.all([
     Product.find({ ...search, ...tags, ...priceQuery })
       .skip(page * 10)

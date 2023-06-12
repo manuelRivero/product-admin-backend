@@ -20,11 +20,11 @@ const {
 const { validateJWT } = require("../../middleware/validateJWT");
 
 // routes
-router.get("/", getProducts);
-router.get("/detail", getProductDetail.do)
-router.put("/edit/:id", editProduct.check, editProduct.do)
-router.get("/admin-products", getAdminProducts);
-router.post("/", createProduct.check, createProduct.do);
+router.get("/", [validateJWT], getProducts);
+router.get("/detail", [validateJWT], getProductDetail.do)
+router.put("/edit/:id", [validateJWT],editProduct.check, editProduct.do)
+router.get("/admin-products", [validateJWT],  getAdminProducts);
+router.post("/", [validateJWT],createProduct.check, createProduct.do);
 router.post("/like/:id", [validateJWT], likeProduct.check, likeProduct.do);
 router.get("/topProducts", [validateJWT], topProducts);
 router.post(
