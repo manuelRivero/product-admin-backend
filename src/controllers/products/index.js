@@ -7,7 +7,6 @@ const validation = require("./../../helpers/validate");
 const Joi = require("joi");
 const { cloudinary } = require("./../../helpers/imageUpload");
 const ExcelJS = require("exceljs");
-var workbook = new ExcelJS.Workbook();
 var AdmZip = require("adm-zip");
 var fs = require("fs");
 const path = require("path");
@@ -148,8 +147,10 @@ const createProductsFromExcel = {
     }
   },
   do: async (req, res) => {
+    var workbook = new ExcelJS.Workbook();
     const filePath = req.files.excel.tempFilePath;
     const productWithErrors = [];
+
     workbook.xlsx.readFile(filePath).then(async function () {
       var workSheet = workbook.getWorksheet("productos");
       for (let i = 2; i <= workSheet.rowCount; i++) {
@@ -167,6 +168,7 @@ const createProductsFromExcel = {
             .map((e) => ({ name: e })),
           description: currentRow.getCell(5).value,
           stock: currentRow.getCell(6).value,
+          status:{available: currentRow.getCell(7).value}
         };
 
         if (productId) {
@@ -478,6 +480,40 @@ const topProducts = async (req, res) => {
     metadata: topProducts[0].metadata,
   });
 };
+
+const generateProductsExcel = async (req, res) => {
+  var workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("productos");
+
+  
+  worksheet.columns = [
+    {header: 'id', key: 'id'},
+    {header: 'name', key: 'name'},
+    {header: 'price', key: 'price'}, 
+    {header: 'tags', key: 'tags'},
+    {header: 'description', key: 'description'},
+    {header: 'stock', key: 'stock'},
+    {header: 'status', key: 'status'}
+
+   ];
+ 
+
+  for (let i = 0; i < worksheet.columns.length; i += 1) { 
+    column.width = 40;
+  }
+
+   workbook.xlsx.writeBuffer()
+    .then(buffer => {
+      res.set({
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': 'attachment; filename="example.xlsx"'
+      });
+      res.send(buffer);
+    })
+  .catch((err) => {
+    console.log("err", err);
+  });
+}
 module.exports = {
   createProduct,
   getProducts,
@@ -488,4 +524,5 @@ module.exports = {
   getAdminProducts,
   getProductDetail,
   editProduct,
+  generateProductsExcel
 };

@@ -13,7 +13,8 @@ const {
   createProductsFromExcel,
   createProductsImages,
   getProductDetail,
-  editProduct
+  editProduct,
+  generateProductsExcel
 } = require("../../controllers/products");
 
 // validation
@@ -21,6 +22,7 @@ const { validateJWT } = require("../../middleware/validateJWT");
 
 // routes
 router.get("/", [validateJWT], getProducts);
+router.get("/get-excel-template", [validateJWT], generateProductsExcel);
 router.get("/detail", [validateJWT], getProductDetail.do)
 router.put("/edit/:id", [validateJWT],editProduct.check, editProduct.do)
 router.get("/admin-products", [validateJWT],  getAdminProducts);
