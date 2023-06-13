@@ -149,43 +149,64 @@ const createProductsFromExcel = {
   },
   do: async (req, res) => {
     const filePath = req.files.excel.tempFilePath;
+    const productWithErrors = [];
     workbook.xlsx.readFile(filePath).then(async function () {
       var workSheet = workbook.getWorksheet("productos");
+      for (let i = 2; i <= workSheet.rowCount; i++) {
+        const currentRow = workSheet.getRow(i);
+        const productId = currentRow.getCell(1).value;
+        if (!mongoose.isValidObjectId(productId)) {
+          productWithErrors.push({ _id: productId, error: "Id invalido" });
+        }
+        const productData = {
+          name: currentRow.getCell(2).value,
+          price: currentRow.getCell(3).value,
+          tags: currentRow
+            .getCell(4)
+            .value.split(",")
+            .map((e) => ({ name: e })),
+          description: currentRow.getCell(5).value,
+          stock: currentRow.getCell(6).value,
+        };
 
-      for (let i = 1; i <= workSheet.rowCount; i++) {
-        const setProduct = async () => {
-          if (i === 1) return;
-          const currentRow = workSheet.getRow(i);
-          const productId = currentRow.getCell(1).value;
-
-          const productData = {
-            name: currentRow.getCell(2).value,
-            price: currentRow.getCell(3).value,
-            tags: currentRow
-              .getCell(4)
-              .value.split(",")
-              .map((e) => ({ name: e })),
-            description: currentRow.getCell(5).value,
-            stock: currentRow.getCell(6).value,
-          };
-
-          if (productId) {
+        if (productId) {
+          try {
+            
             console.log("id case");
-            await Product.findOneAndUpdate(
+            const updatedProduct = await Product.findOneAndUpdate(
               { _id: productId },
-              { ...productData }
+              { ...productData },
+              { new: true }
             );
-          } else {
-            console.log("new product case");
+            if (!updatedProduct) {
+              productWithErrors.push({
+                _id: productId,
+                error: "No se encontró el producto",
+              });
+            }
+          } catch (error) {
+            productWithErrors.push({
+                _id: "no se proveyó, se asume que es un producto nuevo",
+                error: "No se pudo actualizar",
+              });
+          }
+        } else {
+          console.log("new product case");
+          try {
             const product = new Product({ ...productData });
             await product.save();
+            
+          } catch (error) {
+            productWithErrors.push({
+                _id: productId,
+                error: "No se pudo crear el producto:" + " " + currentRow.getCell(2).value,
+              });
           }
-        };
-        await setProduct();
+        }
       }
-
       res.json({
         ok: true,
+        productWithErrors,
       });
     });
   },
@@ -206,7 +227,7 @@ const createProductsImages = {
     const zip = new AdmZip(filePath);
     let productWithErrors = [];
     zip.extractAllTo("./output");
-  
+
     const imagesFolder = await fs.promises.readdir("./output");
     for (let subFolder of imagesFolder) {
       const files = await fs.promises.readdir(`./output/${subFolder}`);
@@ -214,18 +235,20 @@ const createProductsImages = {
         const fileId = file;
         try {
           if (!mongoose.isValidObjectId(fileId)) {
-            productWithErrors.push(fileId);
+            productWithErrors.push({ _id: fileId, error: "Id iválido" });
             console.log("error en id:", fileId);
             continue;
           }
-  
-          const product = await Product.findById(mongoose.Types.ObjectId(fileId));
+
+          const product = await Product.findById(
+            mongoose.Types.ObjectId(fileId)
+          );
           if (!product) {
             console.log("no existe el producto:", fileId);
             productWithErrors.push(fileId);
             continue;
           }
-  
+
           const images = await fs.promises.readdir(
             `./output/${subFolder}/${fileId}`
           );
@@ -235,7 +258,7 @@ const createProductsImages = {
             );
           });
           const resultUrl = await Promise.all(uploadPromises);
-  
+
           product.images = resultUrl.map((e) => ({
             url: e.secure_url,
           }));
@@ -243,17 +266,20 @@ const createProductsImages = {
         } catch (error) {
           console.log("error", error);
           console.log("error al subir imagenes para el id:" + fileId);
-          productWithErrors.push(fileId);
+          productWithErrors.push({
+            _id: fileId,
+            error: "No se pudieron cargar las imágenes",
+          });
         }
       }
     }
-  
+
     console.log("productWithErrors", productWithErrors);
     res.json({
       ok: true,
       productWithErrors,
     });
-  }  
+  },
 };
 const getProducts = async (req, res) => {
   console.log("req.query.search", req.query.search);
