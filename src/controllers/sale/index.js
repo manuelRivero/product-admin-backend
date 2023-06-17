@@ -1,8 +1,14 @@
 const Sale = require("./../../models/sales");
 const Product = require("./../../models/product");
 const User = require("./../../models/user");
+const validation = require("./../../helpers/validate");
+const mongoose = require("mongoose");
+
+
 
 const moment = require("moment");
+const { orderStatus } = require("./const");
+const Joi = require("joi");
 
 const createSale = async (req, res) => {
   const { products } = req.body;
@@ -86,54 +92,17 @@ const createSale = async (req, res) => {
 };
 const getSales = async (req, res) => {
   const { query } = req;
-  if (!query.maxDate && query.minDate) {
-    return res.status(404).json({
-      ok: false,
-      message: "La fecha máxima es requerida",
-    });
-  }
-  if (!query.minDate && query.maxDate) {
-    return res.status(404).json({
-      ok: false,
-      message: "La fecha minima es requerida",
-    });
-  }
-
-  if (query.minDate && !moment(query.minDate, "YYYY-MM-DD").isValid()) {
-    return res.status(404).json({
-      ok: false,
-      message: "La fecha minima no es valida",
-    });
-  }
-  if (query.maxDate && !moment(query.maxDate, "YYYY-MM-DD").isValid()) {
-    return res.status(404).json({
-      ok: false,
-      message: "La fecha máxima no es valida",
-    });
-  }
   const page = Number(req.query.page) || 0;
-  const regex = new RegExp(req.query.search, "i");
-  const search = req.query.search ? { name: regex } : {};
-  const tags = req.query.tags
-    ? { "tags.name": { $in: JSON.parse(req.query.tags) } }
-    : {};
-  const maxDate = query.maxDate
-    ? { $lte: new Date(new Date(query.maxDate).setHours(23, 59)) }
-    : {};
-  const minDate = query.minDate ? { $gte: new Date(query.minDate) } : {};
-  const dateQuery =
-    query.minDate && query.maxDate
-      ? { createdAt: { ...maxDate, ...minDate } }
-      : {};
+  const status = query.status ? {status: orderStatus[query.status]} : {}
+
   const [sales, total] = await Promise.all(
     [
-      Sale.find({ ...search, ...tags, ...dateQuery })
+      Sale.find({...status})
         .populate({ path: "user", select: "name lastname email provider" })
-        .populate({ path: "products", select: "name price" })
         .skip(page * 10)
         .limit(10),
     ],
-    Sale.find({ ...search, ...tags })
+    Sale.find().count()
   );
   res.status(200).json({
     ok: true,
@@ -141,6 +110,40 @@ const getSales = async (req, res) => {
     total,
   });
 };
+const changeSaleStatus = {
+  check: async (req, res, next) =>{
+    const schema = Joi.object({
+      id:Joi.string().required(),
+      status: Joi.number().valid(...[0,1,2,3,4,5]).required()
+    })
+    validation.validateBody(req, next, schema);
+  },
+  do: async (req, res, next) =>{
+    try {
+      const sale = await Sale.findById(mongoose.Types.ObjectId(req.body.id));
+      if(!sale){
+        res.status(400).json({
+          ok:false,
+          error:"No se encontro el numero de la orden"
+        })
+        return
+      }
+      sale.status = orderStatus[req.body.status];
+      console.log("sale", sale)
+      await sale.save()
+      res.json({
+        ok:true,
+        id:sale._id
+      })
+    } catch (error) {
+      console.log("error", error)
+      res.status(400).json({
+        ok:false,
+        error:"No se ha podido actualizar el estatus de la orden"
+      })
+    }
+  }
+}
 const getMonthlySales = async (req, res) => {
   const { query } = req;
   const startOfMonth = moment(query.date, "DD-MM-YYYY").startOf("month");
@@ -165,6 +168,7 @@ const getMonthlySales = async (req, res) => {
     sales,
   });
 };
+
 const totalByDate = {
   check: (req, res, next) => {},
 
@@ -257,4 +261,5 @@ module.exports = {
   totalByDate,
   dailySales,
   getMonthlySales,
+  changeSaleStatus
 };
