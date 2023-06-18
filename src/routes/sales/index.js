@@ -5,7 +5,7 @@ const { validateJWT } = require("../../middleware/validateJWT");
 
 const router = Router();
 
-router.post("/", [validateJWT], createSale);
+router.post("/", [validateJWT], createSale.check, createSale.do);
 router.put("/edit", [validateJWT], changeSaleStatus.check, changeSaleStatus.do);
 router.get("/", [validateJWT], getSales);
 router.get("/dailySales", [validateJWT], dailySales.do);

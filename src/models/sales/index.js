@@ -4,10 +4,11 @@ const SaleSchema = Schema(
   {
     status: {
       type: String,
+      required:true
     },
-    products: {
+    product: {
       quantity: { type: Number, required: true },
-      product: {
+      data: {
         type: {
           _id: { type: Schema.Types.ObjectId, ref: "Products" },
           name: {
@@ -27,8 +28,10 @@ const SaleSchema = Schema(
     },
     user: {
       required: true,
-      type: Schema.Types.ObjectId,
-      ref: "User",
+      type:{
+        email: String,
+        phone: String
+      }
     },
     total: {
       type: Number,
