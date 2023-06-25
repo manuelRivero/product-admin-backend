@@ -7,33 +7,37 @@ const SaleSchema = Schema(
       required:true
     },
     paymentMethod:{
-      type:Number
+      type:Number,
+      required:true
     },
-    product: {
-      quantity: { type: Number, required: true },
-      data: {
-        type: {
-          _id: { type: Schema.Types.ObjectId, ref: "Products" },
-          name: {
-            type: String,
-            required: true,
-            trim: true,
+    products: {
+      type:[
+        {
+          quantity: { type: Number, required: true },
+          data: {
+            type: {
+              _id: { type: Schema.Types.ObjectId, ref: "Products" },
+              name: {
+                type: String,
+                required: true,
+                trim: true,
+              },
+              price: {
+                type: Number,
+                required: true,
+              },
+              discount: {
+                type: Number,
+              },
+            },
           },
-          price: {
-            type: Number,
-            required: true,
-          },
-          discount: {
-            type: Number,
-          },
-        },
-      },
+        }
+      ]
     },
     user: {
       required: true,
       type:{
-        email: String,
-        phone: String
+        _id: { type: Schema.Types.ObjectId, ref: "Users" }
       }
     },
     total: {

@@ -8,6 +8,116 @@ const moment = require("moment");
 const { orderStatus } = require("./const");
 const Joi = require("joi");
 
+const createSaleFromAdmin = {
+  check: async (req, res, next) => {
+    const schema = Joi.object({
+      paymentMethod: Joi.number().required().valid(1, 0),
+      products: Joi.array()
+        .items(
+          Joi.object({
+            _id: Joi.string().required(),
+            quantity: Joi.number().required(),
+          })
+        )
+        .required(),
+    });
+    validation.validateBody(req, next, schema);
+  },
+  do: async (req, res, next) => {
+    const { uid } = req;
+    const { products, paymentMethod } = req.body;
+    const errorProducts = [];
+    products.forEach(async (element) => {
+      if (element.quantity <= 0) {
+        errorProducts.push({
+          _id: element._id,
+          error: "Se envió una cantidad de cero",
+        });
+        return;
+      }
+
+      const targetProduct = await Product.findOne({
+        _id: mongoose.Types.ObjectId(element._id),
+      });
+      if (!targetProduct) {
+        errorProducts.push({
+          _id: element._id,
+          error: "No existe el producto",
+        });
+      }
+    });
+
+    if (errorProducts.length > 0) {
+      res.status(400).json({
+        ok: false,
+        message: "No se pudo procesar la orden de los siguientes productos",
+        errorProducts,
+      });
+      return;
+    }
+
+    let total = 0;
+
+    for (product of products) {
+      const targetProduct = await Product.findOne({
+        _id: mongoose.Types.ObjectId(product._id),
+      });
+      if (targetProduct.stock < product.quantity) {
+        errorProducts.push({ _id: product._id, error: "Producto sin stock" });
+        return;
+      }
+
+      targetProduct.stock = targetProduct.stock - Number(product.quantity);
+
+      product.name = targetProduct.name;
+      product.price = targetProduct.price;
+      product.discount = targetProduct.discount | null;
+
+      await targetProduct.save();
+      let discount = 0;
+      if (targetProduct.discount) {
+        discount = (targetProduct.price * targetProduct.discount) / 100;
+        total =
+          total + (targetProduct.price - discount) * Number(product.quantity);
+      } else {
+        total = total + targetProduct.price * Number(product.quantity);
+      }
+    }
+
+    const sale = new Sale({
+      products: products.map((e) => {
+        return {
+          data: {
+            _id: e._id,
+            name: e.name,
+            price: e.price,
+            discount: e.discount | null,
+          },
+          quantity: e.quantity,
+        };
+      }),
+      user: { _id: uid },
+      total,
+      paymentMethod: paymentMethod,
+      status: orderStatus[2],
+    });
+
+    try {
+      await sale.save();
+      res.status(200).json({
+        ok: true,
+        sale,
+        errorProducts,
+      });
+    } catch (error) {
+      res.status(400).json({
+        ok: false,
+        message: "Sucedió un error al guardar la orden",
+      });
+      console.log("sale error", error);
+    }
+  },
+};
 const createSale = {
   check: async (req, res, next) => {
     const schema = Joi.object({
@@ -259,4 +369,5 @@ module.exports = {
   dailySales,
   getMonthlySales,
   changeSaleStatus,
+  createSaleFromAdmin,
 };
