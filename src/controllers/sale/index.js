@@ -98,6 +98,7 @@ const getSales = async (req, res) => {
 const changeSaleStatus = {
   check: async (req, res, next) => {
     const schema = Joi.object({
+      paymentMethod: Joi.string().required(),
       id: Joi.string().required(),
       status: Joi.number()
         .valid(...[0, 1, 2, 3, 4, 5])
@@ -116,11 +117,18 @@ const changeSaleStatus = {
         return;
       }
       sale.status = orderStatus[req.body.status];
-      console.log("sale", sale);
+      if (req.body.paymentMethod) {
+        sale.paymentMethod = req.body.paymentMethod;
+      } else {
+        if (!sale.paymentMethod) {
+          sale.paymentMethod = null;
+        }
+      }
       await sale.save();
       res.json({
         ok: true,
         id: sale._id,
+        status: sale.status,
       });
     } catch (error) {
       console.log("error", error);

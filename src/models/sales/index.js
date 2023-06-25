@@ -6,6 +6,9 @@ const SaleSchema = Schema(
       type: String,
       required:true
     },
+    paymentMethod:{
+      type:Number
+    },
     product: {
       quantity: { type: Number, required: true },
       data: {
