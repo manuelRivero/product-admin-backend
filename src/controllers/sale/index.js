@@ -326,33 +326,33 @@ const dailySales = {
       { $unwind: "$products" },
       {
         $group: {
-          _id: "$products._id",
+          _id: {_id:"$products.data._id", data: "$products.data"},
           quantity: { $sum: { $toDouble: "$products.quantity" } },
         },
       },
-      {
-        $lookup: {
-          from: "products",
-          localField: "_id",
-          foreignField: "_id",
-          as: "product_data",
-        },
-      },
-      { $unwind: "$product_data" },
-      {
-        $project: {
-          _id: 1,
-          quantity: 1,
-          product_data: "$product_data",
-        },
-      },
+      // {
+      //   $lookup: {
+      //     from: "products",
+      //     localField: "_id",
+      //     foreignField: "_id",
+      //     as: "product_data",
+      //   },
+      // },
+      // { $unwind: "$product_data" },
+      // {
+      //   $project: {
+      //     _id: 1,
+      //     quantity: 1,
+      //     product_data: "$product_data",
+      //   },
+      // },
     ]);
 
     let total = 0;
     console.log("sales", sales);
     sales.forEach((sale) => {
       total =
-        total + parseInt(sale.product_data.price) * parseInt(sale.quantity);
+        total + parseInt(sale._id.data.price) * parseInt(sale.quantity);
     });
 
     res.status(200).json({
