@@ -435,26 +435,26 @@ const topProducts = async (req, res) => {
     { $unwind: "$products" },
     {
       $group: {
-        _id: "$products._id",
+        _id: {_id:"$products.data._id", data:"$products.data"},
         count: {
           $sum: "$products.quantity",
         },
       },
     },
-    {
-      $lookup: {
-        from: "products",
-        localField: "_id",
-        foreignField: "_id",
-        as: "product_data",
-      },
-    },
+    //{
+      // $lookup: {
+      //   from: "products",
+      //   localField: "_id",
+      //   foreignField: "_id",
+      //   as: "product_data",
+      // },
+    // },
 
-    { $unwind: "$product_data" },
-    {
+    // { $unwind: "$product_data" },
+     {
       $project: {
         _id: 0,
-        productData: "$product_data",
+        data: "$_id.data",
         count: 1,
       },
     },
@@ -465,7 +465,7 @@ const topProducts = async (req, res) => {
         data: [
           { $skip: page * 10 },
           { $limit: 10 },
-          { $sort: { "product_data.price": -1 } },
+          { $sort: { "count": -1 } },
         ],
       },
     },

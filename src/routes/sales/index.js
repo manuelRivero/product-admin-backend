@@ -3,7 +3,7 @@ const { Router } = require("express");
 const {
   createSale,
   getSales,
-  totalByDate,
+  getSaleDetail,
   dailySales,
   getMonthlySales,
   changeSaleStatus,
@@ -14,6 +14,7 @@ const { validateJWT } = require("../../middleware/validateJWT");
 const router = Router();
 
 router.post("/", [validateJWT], createSale.check, createSale.do);
+router.get("/detail", [validateJWT], getSaleDetail);
 router.post(
   "/from-admin",
   [validateJWT],

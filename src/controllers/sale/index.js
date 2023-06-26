@@ -205,6 +205,24 @@ const getSales = async (req, res) => {
     total,
   });
 };
+const getSaleDetail = async (req, res) =>{ 
+  const {id} = req.query;
+  if(!id){
+    return res.status(400).json({
+      ok:false,
+      message:"No se agrego el id de la orden en el request"
+    })
+  }
+
+  const sale = await Sale.aggregate([
+    {$match:{_id: mongoose.Types.ObjectId(id)}}
+  ])
+  console.log("sale", sale)
+  return res.json({
+    ok:true,
+    data:sale[0]
+  })
+}
 const changeSaleStatus = {
   check: async (req, res, next) => {
     const schema = Joi.object({
@@ -370,4 +388,5 @@ module.exports = {
   getMonthlySales,
   changeSaleStatus,
   createSaleFromAdmin,
+  getSaleDetail
 };
