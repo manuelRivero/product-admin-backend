@@ -323,6 +323,82 @@ const getProducts = async (req, res) => {
   });
 };
 
+const getProductsWeb = async (req, res) => {
+  try {
+    console.log("req.query.search", req.query.search);
+
+    // Paginación
+    const page = Number(req.query.page) || 0;
+    const limit = 10; // Número de productos por página
+    const skip = page * limit;
+
+    // Filtros
+    const regex = req.query.search ? new RegExp(req.query.search, "i") : null;
+    const minPrice = req.query.minPrice ? Number(req.query.minPrice) : null;
+    const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : null;
+    const tags = req.query.tags ? JSON.parse(req.query.tags) : null;
+
+    // Construcción del pipeline de agregación
+    const pipeline = [];
+
+    // Filtro por búsqueda (nombre)
+    if (regex) {
+      pipeline.push({
+        $match: { name: { $regex: regex } },
+      });
+    }
+
+    // Filtro por rango de precio
+    if (minPrice !== null || maxPrice !== null) {
+      const priceFilter = {};
+      if (minPrice !== null) priceFilter.$gte = minPrice;
+      if (maxPrice !== null) priceFilter.$lte = maxPrice;
+
+      pipeline.push({
+        $match: { price: priceFilter },
+      });
+    }
+
+    // Filtro por tags
+    if (tags) {
+      pipeline.push({
+        $match: { "tags.name": { $in: tags } },
+      });
+    }
+
+    // Conteo total de documentos (antes de la paginación)
+    pipeline.push({
+      $facet: {
+        total: [{ $count: "count" }],
+        products: [
+          { $skip: skip },
+          { $limit: limit },
+          { $project: { _id: 1, name: 1, price: 1, tags: 1 } }, // Proyección de campos necesarios
+        ],
+      },
+    });
+
+    // Ejecución del pipeline
+    const result = await Product.aggregate(pipeline);
+
+    const total = result[0]?.total[0]?.count || 0;
+    const products = result[0]?.products || [];
+
+    // Respuesta
+    res.json({
+      ok: true,
+      products,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    console.error("Error en getProductsWeb:", error);
+    res.status(500).json({ ok: false, error: "Error interno del servidor" });
+  }
+};
+
+
 const getProductDetail = {
   do: async (req, res) => {
     const { id } = req.query;
@@ -524,5 +600,6 @@ module.exports = {
   getAdminProducts,
   getProductDetail,
   editProduct,
-  generateProductsExcel
+  generateProductsExcel,
+  getProductsWeb
 };

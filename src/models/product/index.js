@@ -46,6 +46,7 @@ const ProductSchema = Schema(
     },
     discount: {
       type: Number,
+      default: 0
     },
   },
   { colection: "products", timestamps: true }
