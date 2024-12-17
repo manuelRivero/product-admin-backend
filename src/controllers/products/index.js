@@ -373,7 +373,6 @@ const getProductsWeb = async (req, res) => {
         products: [
           { $skip: skip },
           { $limit: limit },
-          { $project: { _id: 1, name: 1, price: 1, tags: 1 } }, // Proyección de campos necesarios
         ],
       },
     });
