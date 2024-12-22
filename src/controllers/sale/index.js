@@ -474,7 +474,7 @@ const saveSaleByNotification = async (req, res) => {
         dni,
         products,
         address,
-        postalCode,
+        postal_code,
         phone,
       } = metadata;
       console.log("metadata", metadata);
