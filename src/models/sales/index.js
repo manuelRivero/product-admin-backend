@@ -6,10 +6,6 @@ const SaleSchema = Schema(
       type: String,
       required:true
     },
-    paymentMethod:{
-      type:Number,
-      required:true
-    },
     products: {
       type:[
         {
@@ -36,9 +32,35 @@ const SaleSchema = Schema(
     },
     user: {
       required: true,
-      type:{
-        _id: { type: Schema.Types.ObjectId, ref: "Users" }
-      }
+      type: String
+    },
+    name: {
+      required: true,
+      type: String
+    },
+    lastName: {
+      required: true,
+      type: String
+    },
+    dni: {
+      required: true,
+      type: String
+    },
+    phone: {
+      required: true,
+      type: String
+    },
+    postalCode: {
+      required: true,
+      type: String
+    },
+    address: {
+      required: true,
+      type: String
+    },
+    paymentId:{
+      required: true,
+      type: String
     },
     total: {
       type: Number,

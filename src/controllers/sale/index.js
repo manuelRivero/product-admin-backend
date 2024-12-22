@@ -3,10 +3,19 @@ const Product = require("./../../models/product");
 const User = require("./../../models/user");
 const validation = require("./../../helpers/validate");
 const mongoose = require("mongoose");
-
+const mercadoPago = require("mercadopago");
 const moment = require("moment");
 const { orderStatus } = require("./const");
 const Joi = require("joi");
+const { finalPrice } = require("../../helpers/product");
+
+const { MercadoPagoConfig, Payment, Preference } = mercadoPago;
+
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN,
+  options: { timeout: 5000, idempotencyKey: "abc" },
+});
+const payment = new Payment(client);
 
 const createSaleFromAdmin = {
   check: async (req, res, next) => {
@@ -205,24 +214,24 @@ const getSales = async (req, res) => {
     total,
   });
 };
-const getSaleDetail = async (req, res) =>{ 
-  const {id} = req.query;
-  if(!id){
+const getSaleDetail = async (req, res) => {
+  const { id } = req.query;
+  if (!id) {
     return res.status(400).json({
-      ok:false,
-      message:"No se agrego el id de la orden en el request"
-    })
+      ok: false,
+      message: "No se agrego el id de la orden en el request",
+    });
   }
 
   const sale = await Sale.aggregate([
-    {$match:{_id: mongoose.Types.ObjectId(id)}}
-  ])
-  console.log("sale", sale)
+    { $match: { _id: mongoose.Types.ObjectId(id) } },
+  ]);
+  console.log("sale", sale);
   return res.json({
-    ok:true,
-    data:sale[0]
-  })
-}
+    ok: true,
+    data: sale[0],
+  });
+};
 const changeSaleStatus = {
   check: async (req, res, next) => {
     const schema = Joi.object({
@@ -344,7 +353,7 @@ const dailySales = {
       { $unwind: "$products" },
       {
         $group: {
-          _id: {_id:"$products.data._id", data: "$products.data"},
+          _id: { _id: "$products.data._id", data: "$products.data" },
           quantity: { $sum: { $toDouble: "$products.quantity" } },
         },
       },
@@ -369,8 +378,7 @@ const dailySales = {
     let total = 0;
     console.log("sales", sales);
     sales.forEach((sale) => {
-      total =
-        total + parseInt(sale._id.data.price) * parseInt(sale.quantity);
+      total = total + parseInt(sale._id.data.price) * parseInt(sale.quantity);
     });
 
     res.status(200).json({
@@ -380,6 +388,97 @@ const dailySales = {
   },
 };
 
+const createSaleByClient = {
+  do: async (req, res) => {
+    const { email, name, lastName, dni, products, id, address, postalCode, phone } =
+      req.body;
+    console.log({
+      email,
+      name,
+      lastName,
+      dni,
+      products,
+      id,
+      address,
+      postalCode,
+    });
+    try {
+      const body = {
+        items: products.map((product)=>(
+            {
+              title: product.name,
+              unit_price: finalPrice(product.price, product.discount),
+              quantity: Number(quantity),
+              currency_id: "ARS",
+            }
+        )),
+        auto_return: "approved",
+        back_urls: {
+          success: "https://ecommerce-front-rr7v.onrender.com/compra-exitosa",
+          failure: "https://ecommerce-front-rr7v.onrender.com/compra-fallida",
+        },
+        payer: {
+          email,
+        },
+        metadata: {
+          email, name, lastName, dni, products, id, address, postalCode, phone
+        },
+        notification_url:
+          "https://ecommerce-front-rr7v.onrender.com/api/sale/save-sale",
+      };
+
+      const preference = await new Preference(client);
+      const response = await preference.create({ body });
+      res.json(response);
+    } catch (error) {
+      console.log('createSaleByClient error', error);
+    }
+  },
+};
+
+const saveSaleByNotification = async (req, res) => {
+  const { topic } = req.query;
+  const id = req.query.id
+  console.log("entro a /save-ticket");
+
+  if (topic === "payment") {
+    // Si la notificación es de tipo pago
+    try {
+      const { metadata } = await payment.get({ id }); // Consultas el pago en MP
+    
+      const {
+        email,
+        name,
+        lastName,
+        dni,
+        products,
+        address,
+        postalCode,
+        phone
+      } = metadata
+      const newSale = new Sale({
+        status:"PAGADO",
+          user: email,
+          name,
+          lastName,
+          dni,
+          products,
+          paymentId:id,
+          address,
+          postalCode,
+          phone,
+      });
+      await newSale.save();
+      res.sendStatus(200);
+      // Procesa la información del pago según tus necesidades
+    } catch (error) {
+      console.error("Error al consultar el pago:", error);
+      res.sendStatus(500);
+
+    }
+  }
+}
+
 module.exports = {
   createSale,
   getSales,
@@ -388,5 +487,7 @@ module.exports = {
   getMonthlySales,
   changeSaleStatus,
   createSaleFromAdmin,
-  getSaleDetail
+  getSaleDetail,
+  createSaleByClient,
+  saveSaleByNotification,
 };
