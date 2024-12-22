@@ -12,7 +12,10 @@ const { dbConnection } = require("./db");
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'https://ecommerce-front-rr7v.onrender.com'], // Dirección del cliente
+  credentials: true,
+}));
 
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }));

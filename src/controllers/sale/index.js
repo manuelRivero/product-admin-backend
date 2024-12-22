@@ -232,6 +232,24 @@ const getSaleDetail = async (req, res) => {
     data: sale[0],
   });
 };
+const getSaleDetailWeb = async (req, res) => {
+  const { id } = req.query;
+  if (!id) {
+    return res.status(400).json({
+      ok: false,
+      message: "No se agrego el id de la orden en el request",
+    });
+  }
+
+  const sale = await Sale.aggregate([
+    { $match: { _id: mongoose.Types.ObjectId(id) } },
+  ]);
+  console.log("sale", sale);
+  return res.json({
+    ok: true,
+    data: sale[0],
+  });
+};
 const changeSaleStatus = {
   check: async (req, res, next) => {
     const schema = Joi.object({
@@ -392,23 +410,13 @@ const createSaleByClient = {
   do: async (req, res) => {
     const { email, name, lastName, dni, products, id, address, postalCode, phone } =
       req.body;
-    console.log({
-      email,
-      name,
-      lastName,
-      dni,
-      products,
-      id,
-      address,
-      postalCode,
-    });
     try {
       const body = {
         items: products.map((product)=>(
             {
               title: product.name,
               unit_price: finalPrice(product.price, product.discount),
-              quantity: Number(quantity),
+              quantity: Number(product.quantity),
               currency_id: "ARS",
             }
         )),
@@ -490,4 +498,5 @@ module.exports = {
   getSaleDetail,
   createSaleByClient,
   saveSaleByNotification,
+  getSaleDetailWeb,
 };
