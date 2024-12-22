@@ -13,7 +13,7 @@ const { dbConnection } = require("./db");
 const app = express();
 
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://ecommerce-front-rr7v.onrender.com'], // Dirección del cliente
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'https://ecommerce-front-rr7v.onrender.com'], // Dirección del cliente
   credentials: true,
 }));
 
