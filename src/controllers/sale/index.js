@@ -486,7 +486,7 @@ const saveSaleByNotification = async (req, res) => {
         name,
         lastName: last_name,
         dni,
-        products,
+        products : products.map((product) =>({ quantity: product.quantity, data: {...product}})),
         paymentId: id,
         address,
         postalCode: postal_code,
