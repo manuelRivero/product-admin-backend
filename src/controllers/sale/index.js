@@ -417,6 +417,7 @@ const createSaleByClient = {
       postalCode,
       phone,
     } = req.body;
+    console.log('req.body', req.body)
     try {
       const body = {
         items: products.map((product) => ({
@@ -447,6 +448,8 @@ const createSaleByClient = {
         notification_url:
           "https://product-admin-backend.onrender.com/api/sale/save-sale",
       };
+      console.log('mercado pago body', body)
+
 
       const preference = await new Preference(client);
       const response = await preference.create({ body });
