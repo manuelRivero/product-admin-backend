@@ -445,7 +445,7 @@ const createSaleByClient = {
           phone,
         },
         notification_url:
-          "https://ecommerce-front-rr7v.onrender.com/api/sale/save-sale",
+          "https://product-admin-backend.onrender.com/api/sale/save-sale",
       };
 
       const preference = await new Preference(client);
