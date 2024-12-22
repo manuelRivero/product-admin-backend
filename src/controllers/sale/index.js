@@ -241,9 +241,7 @@ const getSaleDetailWeb = async (req, res) => {
     });
   }
 
-  const sale = await Sale.aggregate([
-    { $match: { _id: mongoose.Types.ObjectId(id) } },
-  ]);
+  const sale = await Sale.aggregate([{ $match: { paymentId: id } }]);
   console.log("sale", sale);
   return res.json({
     ok: true,
@@ -408,18 +406,25 @@ const dailySales = {
 
 const createSaleByClient = {
   do: async (req, res) => {
-    const { email, name, lastName, dni, products, id, address, postalCode, phone } =
-      req.body;
+    const {
+      email,
+      name,
+      lastName,
+      dni,
+      products,
+      id,
+      address,
+      postalCode,
+      phone,
+    } = req.body;
     try {
       const body = {
-        items: products.map((product)=>(
-            {
-              title: product.name,
-              unit_price: finalPrice(product.price, product.discount),
-              quantity: Number(product.quantity),
-              currency_id: "ARS",
-            }
-        )),
+        items: products.map((product) => ({
+          title: product.name,
+          unit_price: finalPrice(product.price, product.discount),
+          quantity: Number(product.quantity),
+          currency_id: "ARS",
+        })),
         auto_return: "approved",
         back_urls: {
           success: "https://ecommerce-front-rr7v.onrender.com/compra-exitosa",
@@ -429,7 +434,15 @@ const createSaleByClient = {
           email,
         },
         metadata: {
-          email, name, lastName, dni, products, id, address, postalCode, phone
+          email,
+          name,
+          lastName,
+          dni,
+          products,
+          id,
+          address,
+          postalCode,
+          phone,
         },
         notification_url:
           "https://ecommerce-front-rr7v.onrender.com/api/sale/save-sale",
@@ -439,21 +452,21 @@ const createSaleByClient = {
       const response = await preference.create({ body });
       res.json(response);
     } catch (error) {
-      console.log('createSaleByClient error', error);
+      console.log("createSaleByClient error", error);
     }
   },
 };
 
 const saveSaleByNotification = async (req, res) => {
   const { topic } = req.query;
-  const id = req.query.id
+  const id = req.query.id;
   console.log("entro a /save-ticket");
 
   if (topic === "payment") {
     // Si la notificación es de tipo pago
     try {
       const { metadata } = await payment.get({ id }); // Consultas el pago en MP
-    
+
       const {
         email,
         name,
@@ -462,30 +475,32 @@ const saveSaleByNotification = async (req, res) => {
         products,
         address,
         postalCode,
-        phone
-      } = metadata
+        phone,
+      } = metadata;
+      console.log("metadata", metadata);
+
       const newSale = new Sale({
-        status:"PAGADO",
-          user: email,
-          name,
-          lastName,
-          dni,
-          products,
-          paymentId:id,
-          address,
-          postalCode,
-          phone,
+        status: "PAGADO",
+        user: email,
+        name,
+        lastName,
+        dni,
+        products,
+        paymentId: id,
+        address,
+        postalCode,
+        phone,
       });
-      await newSale.save();
+      const response = await newSale.save();
+      console.log('response', response)
       res.sendStatus(200);
       // Procesa la información del pago según tus necesidades
     } catch (error) {
       console.error("Error al consultar el pago:", error);
       res.sendStatus(500);
-
     }
   }
-}
+};
 
 module.exports = {
   createSale,
