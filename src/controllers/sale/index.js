@@ -434,7 +434,7 @@ const createSaleByClient = {
           email,
         },
         metadata: {
-          email,
+          user:email,
           name,
           lastName,
           dni,
@@ -468,9 +468,9 @@ const saveSaleByNotification = async (req, res) => {
       const { metadata } = await payment.get({ id }); // Consultas el pago en MP
 
       const {
-        email,
+        user,
         name,
-        lastName,
+        last_name,
         dni,
         products,
         address,
@@ -481,14 +481,14 @@ const saveSaleByNotification = async (req, res) => {
 
       const newSale = new Sale({
         status: "PAGADO",
-        user: email,
+        user,
         name,
-        lastName,
+        lastName: last_name,
         dni,
         products,
         paymentId: id,
         address,
-        postalCode,
+        postalCode: postal_code,
         phone,
       });
       const response = await newSale.save();
