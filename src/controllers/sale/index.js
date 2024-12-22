@@ -241,8 +241,46 @@ const getSaleDetailWeb = async (req, res) => {
     });
   }
 
-  const sale = await Sale.aggregate([{ $match: { paymentId: id } }]);
-  console.log("sale", sale);
+  const sale = await Sale.aggregate([
+    { $match: { paymentId: id } },
+    { $unwind: '$products' },
+    {
+      $lookup: {
+        from: 'products',
+        localField: 'products.data._id',
+        foreignField: '_id',
+        as: 'product_data',
+      },
+    },
+    {
+      $addFields: {
+        'products.details': '$product_data', // Añade todos los productos relacionados al campo `details`
+      },
+    },
+    {
+      $unset: 'product_data', // Opcional: elimina el campo product_data si no lo necesitas más
+    },
+    {
+      $group: {
+        _id: '$_id',
+        paymentId: { $first: '$paymentId' },
+        user: { $first: '$user' },
+        status: { $first: '$status' },
+        createdAt: { $first: '$createdAt' },
+        updatedAt: { $first: '$updatedAt' },
+        name: { $first: '$name' },
+        lastName: { $first: '$lastName' },
+        dni: { $first: '$dni' },
+        phone: { $first: '$phone' },
+        postalCode: { $first: '$postalCode' },
+        address: { $first: '$address' },
+        products: { $push: '$products' },
+      },
+    },
+  ]);
+  
+  
+  console.log("sale", sale[0].products);
   return res.json({
     ok: true,
     data: sale[0],
