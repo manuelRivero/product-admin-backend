@@ -6,6 +6,8 @@ const bodyParser = require("body-parser");
 const fileUpload = require("express-fileupload");
 const http = require("http");
 const session = require('express-session');
+const MongoStore = require("connect-mongo");
+
 
 
 require("dotenv").config();
@@ -31,6 +33,16 @@ app.use(session({
   secret: process.env.SECRETORPRIVATEKEY,
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.DB_CONNECTION,
+    collectionName: "sessions", // Nombre de la colección donde se guardarán las sesiones
+  }),
+  cookie: {
+    domain: ".localhost",
+    secure: false, // Cambiar a true en producción con HTTPS
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24, // 1 día
+  },
 }));
 
 // parse application/x-www-form-urlencoded

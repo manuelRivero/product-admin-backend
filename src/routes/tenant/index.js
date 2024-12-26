@@ -1,6 +1,7 @@
 const {Router} = require("express");
 const { verifyTenant, getTenantConfig } = require("../../controllers/tenats");
 
+
 const router = Router();
 
 

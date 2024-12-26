@@ -10,6 +10,7 @@ const tenantMiddleware = async (req, res, next) => {
         }
         console.log('tenant config', config)
         req.tenantConfig = config;
+        req.session.tenantConfig = config;
         req.tenant = tenant;
         next();
     } catch (error) {

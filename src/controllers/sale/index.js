@@ -493,10 +493,9 @@ const createSaleByClient = {
       phone,
     } = req.body;
 
-    const { mercadoPagoToken } = req.tenantConfig;
+    const {mercadoPagoToken} = req.session.tenantConfig
     const { tenant } = req;
-    console.log('tenant',tenant )
-    console.log('mercadoPagoToken',mercadoPagoToken )
+    
     if (!mercadoPagoToken) {
       console.log("sin token de mercado pago")
         return res.status(400).json({ ok: false, message: "Mercado Pago credentials not configured" });
@@ -552,10 +551,10 @@ const createSaleByClient = {
 const saveSaleByNotification = async (req, res) => {
   const { topic } = req.query;
   const id = req.query.id;
-  const token = req.session.mercadopagoAccessToken
+  const {mercadoPagoToken} = req.session.tenantConfig
 
   const client = new MercadoPagoConfig({
-    accessToken: token,
+    accessToken: mercadoPagoToken,
     options: { timeout: 5000, idempotencyKey: "abc" },
   });
 

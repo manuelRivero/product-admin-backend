@@ -323,8 +323,10 @@ const getProducts = async (req, res) => {
 };
 
 const getProductsWeb = async (req, res) => {
+  const token = req.session
+
   try {
-    console.log("req.query.search", req.query.search);
+    console.log("token", token);
 
     // Paginación
     const page = Number(req.query.page) || 0;
