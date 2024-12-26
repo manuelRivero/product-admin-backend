@@ -493,15 +493,15 @@ const createSaleByClient = {
       phone,
     } = req.body;
 
-    const { mercadoPagoAccessToken } = req.tenantConfig;
+    const { mercadoPagoToken } = req.tenantConfig;
     const { tenant } = req;
 
-    if (!mercadoPagoAccessToken) {
+    if (!mercadoPagoToken) {
         return res.status(400).json({ ok: false, message: "Mercado Pago credentials not configured" });
     }
     
     const client = new MercadoPagoConfig({
-      accessToken: mercadoPagoAccessToken,
+      accessToken: mercadoPagoToken,
       options: { timeout: 5000, idempotencyKey: "abc" },
     });
     try {
@@ -552,14 +552,14 @@ const saveSaleByNotification = async (req, res) => {
   const id = req.query.id;
   console.log("entro a /save-ticket");
 
-  const { mercadoPagoAccessToken } = req.tenantConfig;
+  const { mercadoPagoToken } = req.tenantConfig;
 
-  if (!mercadoPagoAccessToken) {
+  if (!mercadoPagoToken) {
       return res.status(400).json({ ok: false, message: "Mercado Pago credentials not configured" });
   }
   
   const client = new MercadoPagoConfig({
-    accessToken: mercadoPagoAccessToken,
+    accessToken: mercadoPagoToken,
     options: { timeout: 5000, idempotencyKey: "abc" },
   });
 
