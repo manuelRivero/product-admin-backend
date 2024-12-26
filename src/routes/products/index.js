@@ -15,7 +15,8 @@ const {
   getProductDetail,
   editProduct,
   generateProductsExcel,
-  getProductsWeb
+  getProductsWeb,
+  getProductsByIds
 } = require("../../controllers/products");
 
 // validation
@@ -32,6 +33,7 @@ router.get("/admin-products", [validateJWT],  getAdminProducts);
 router.post("/", [validateJWT],createProduct.check, createProduct.do);
 router.post("/like/:id", [validateJWT], likeProduct.check, likeProduct.do);
 router.get("/topProducts", [validateJWT], topProducts);
+router.get("/get-products-by-id", getProductsByIds.do);
 router.post(
   "/productsExcel",
   [validateJWT],

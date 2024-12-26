@@ -341,14 +341,51 @@ const getMonthlySales = async (req, res) => {
       $lte: new Date(endOfMonth),
     },
   };
-  const [sales] = await Promise.all([
-    Sale.aggregate([
-      {
-        $match: { ...dateQuery },
+
+const sales = await Sale.aggregate([
+  // Filtrar por período de tiempo
+  {
+    $match: {
+      ...dateQuery,
+      status: 'PAGADO', // Opcional: solo considerar ventas pagadas
+    },
+  },
+  // Descomponer el array de productos
+  { $unwind: '$products' },
+  // Calcular el subtotal de cada producto considerando el descuento
+  {
+    $addFields: {
+      'products.subtotal': {
+        $multiply: [
+          '$products.data.price',
+          {
+            $divide: [
+              { $subtract: [100, '$products.data.discount'] },
+              100,
+            ],
+          },
+          '$products.quantity',
+        ],
       },
-      { $group: { _id: "$createdAt", total: { $sum: "$total" } } },
-    ]),
-  ]);
+    },
+  },
+  // Agrupar por día y calcular el total de ventas por día
+  {
+    $group: {
+      _id: {
+        $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }, // Formatear la fecha sin hora
+      },
+      total: { $sum: '$products.subtotal' }, // Sumar el total de ventas por día
+    },
+  },
+  // Ordenar los resultados por fecha (opcional)
+  {
+    $sort: { _id: 1 }, // Orden ascendente por fecha
+  },
+]);
+
+  
+  console.log('getMonthlySales', sales)
   res.status(200).json({
     ok: true,
     sales,
@@ -391,54 +428,55 @@ const totalByDate = {
   },
 };
 const dailySales = {
-  check: () => {},
+  check: () => {}, // Puedes añadir validaciones si es necesario
   do: async (req, res, next) => {
-    let date = req.query.from;
+    try {
+      const date = req.query.from;
 
-    const sales = await Sale.aggregate([
-      {
-        $match: {
-          createdAt: {
-            $lte: moment(date).utc().endOf("date").toDate(),
-            $gte: moment(date).utc().startOf("date").toDate(),
+      const sales = await Sale.aggregate([
+        {
+          $match: {
+            createdAt: {
+              $lte: moment(date).utc().endOf("date").toDate(),
+              $gte: moment(date).utc().startOf("date").toDate(),
+            },
           },
         },
-      },
-      { $unwind: "$products" },
-      {
-        $group: {
-          _id: { _id: "$products.data._id", data: "$products.data" },
-          quantity: { $sum: { $toDouble: "$products.quantity" } },
+        { $unwind: "$products" },
+        {
+          $group: {
+            _id: "$products.data._id", // Agrupamos por el ID del producto
+            quantity: { $sum: { $toDouble: "$products.quantity" } },
+            data: { $first: "$products.data" }, // Mantenemos la información del producto
+            totalSales: {
+              $sum: {
+                $multiply: [
+                  { $toDouble: "$products.quantity" },
+                  {
+                    $multiply: [
+                      { $toDouble: "$products.data.price" },
+                      { $subtract: [1, { $divide: [{ $toDouble: "$products.data.discount" }, 100] }] },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
         },
-      },
-      // {
-      //   $lookup: {
-      //     from: "products",
-      //     localField: "_id",
-      //     foreignField: "_id",
-      //     as: "product_data",
-      //   },
-      // },
-      // { $unwind: "$product_data" },
-      // {
-      //   $project: {
-      //     _id: 1,
-      //     quantity: 1,
-      //     product_data: "$product_data",
-      //   },
-      // },
-    ]);
+      ]);
 
-    let total = 0;
-    console.log("sales", sales);
-    sales.forEach((sale) => {
-      total = total + parseInt(sale._id.data.price) * parseInt(sale.quantity);
-    });
+      // Sumar todas las ventas totales
+      const total = sales.reduce((acc, sale) => acc + sale.totalSales, 0);
 
-    res.status(200).json({
-      ok: true,
-      total,
-    });
+      res.status(200).json({
+        ok: true,
+        total,
+        details: sales, // Incluye los detalles por producto si es útil
+      });
+    } catch (error) {
+      console.error("Error calculating daily sales:", error);
+      next(error); // Pasar el error al manejador de errores
+    }
   },
 };
 

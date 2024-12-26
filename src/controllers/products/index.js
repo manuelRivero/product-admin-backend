@@ -65,9 +65,7 @@ const createProduct = {
 };
 const editProduct = {
   check: async (req, res, next) => {
-    req.body.tags = JSON.parse(req.body.tags);
     req.body.status = JSON.parse(req.body.status);
-    req.body.deletedImages = JSON.parse(req.body.deletedImages);
     validation.validateBody(req, next, createProductSchema);
   },
   do: async (req, res) => {
@@ -118,10 +116,10 @@ const editProduct = {
     console.log("product images", product.images);
     product.name = req.body.name;
     product.price = req.body.price;
+    product.discount = req.body.discount;
     product.description = req.body.description;
     product.stock = req.body.stock;
     product.images = [...product.images, ...productImages];
-    product.tags = req.body.tags;
     product.status.available = req.body.status.available;
 
     const productSave = await product.save();
@@ -168,12 +166,11 @@ const createProductsFromExcel = {
             .map((e) => ({ name: e })),
           description: currentRow.getCell(5).value,
           stock: currentRow.getCell(6).value,
-          status:{available: currentRow.getCell(7).value}
+          status: { available: currentRow.getCell(7).value },
         };
 
         if (productId) {
           try {
-            
             console.log("id case");
             const updatedProduct = await Product.findOneAndUpdate(
               { _id: productId },
@@ -188,21 +185,23 @@ const createProductsFromExcel = {
             }
           } catch (error) {
             productWithErrors.push({
-                _id: "no se proveyó, se asume que es un producto nuevo",
-                error: "No se pudo actualizar",
-              });
+              _id: "no se proveyó, se asume que es un producto nuevo",
+              error: "No se pudo actualizar",
+            });
           }
         } else {
           console.log("new product case");
           try {
             const product = new Product({ ...productData });
             await product.save();
-            
           } catch (error) {
             productWithErrors.push({
-                _id: productId,
-                error: "No se pudo crear el producto:" + " " + currentRow.getCell(2).value,
-              });
+              _id: productId,
+              error:
+                "No se pudo crear el producto:" +
+                " " +
+                currentRow.getCell(2).value,
+            });
           }
         }
       }
@@ -339,12 +338,14 @@ const getProductsWeb = async (req, res) => {
     const tags = req.query.tags ? JSON.parse(req.query.tags) : null;
 
     // Construcción del pipeline de agregación
-    const pipeline = [];
+    const pipeline = [{ $match: { status: { available: true }, stock: { $gt: 0 } } }];
 
     // Filtro por búsqueda (nombre)
     if (regex) {
       pipeline.push({
-        $match: { name: { $regex: regex } },
+        $match: {
+          name: { $regex: regex },
+        },
       });
     }
 
@@ -359,21 +360,11 @@ const getProductsWeb = async (req, res) => {
       });
     }
 
-    // Filtro por tags
-    if (tags) {
-      pipeline.push({
-        $match: { "tags.name": { $in: tags } },
-      });
-    }
-
     // Conteo total de documentos (antes de la paginación)
     pipeline.push({
       $facet: {
         total: [{ $count: "count" }],
-        products: [
-          { $skip: skip },
-          { $limit: limit },
-        ],
+        products: [{ $skip: skip }, { $limit: limit }],
       },
     });
 
@@ -396,6 +387,38 @@ const getProductsWeb = async (req, res) => {
     res.status(500).json({ ok: false, error: "Error interno del servidor" });
   }
 };
+
+
+const getProductsByIds = {
+  do: async (req, res, next) => {
+    try {
+      const { productIds } = req.query;
+
+      if (!Array.isArray(productIds) || productIds.length === 0) {
+        return res.status(400).json({
+          ok: false,
+          message: "Debe proporcionar un array de IDs de productos.",
+        });
+      }
+
+      // Convertir a ObjectId si es necesario
+      const ids = productIds.map((id) => mongoose.Types.ObjectId(id));
+
+      // Obtener los productos
+      const products = await Product.find({ _id: { $in: ids } });
+
+      res.status(200).json({
+        ok: true,
+        products,
+      });
+    } catch (error) {
+      console.error("Error fetching products by IDs:", error);
+      next(error); // Pasar el error al manejador de errores
+    }
+  },
+};
+
+module.exports = getProductsByIds;
 
 
 const getProductDetail = {
@@ -510,23 +533,23 @@ const topProducts = async (req, res) => {
     { $unwind: "$products" },
     {
       $group: {
-        _id: {_id:"$products.data._id", data:"$products.data"},
+        _id: { _id: "$products.data._id", data: "$products.data" },
         count: {
           $sum: "$products.quantity",
         },
       },
     },
     //{
-      // $lookup: {
-      //   from: "products",
-      //   localField: "_id",
-      //   foreignField: "_id",
-      //   as: "product_data",
-      // },
+    // $lookup: {
+    //   from: "products",
+    //   localField: "_id",
+    //   foreignField: "_id",
+    //   as: "product_data",
+    // },
     // },
 
     // { $unwind: "$product_data" },
-     {
+    {
       $project: {
         _id: 0,
         data: "$_id.data",
@@ -537,11 +560,7 @@ const topProducts = async (req, res) => {
     {
       $facet: {
         metadata: [{ $count: "count" }],
-        data: [
-          { $skip: page * 10 },
-          { $limit: 10 },
-          { $sort: { "count": -1 } },
-        ],
+        data: [{ $skip: page * 10 }, { $limit: 10 }, { $sort: { count: -1 } }],
       },
     },
   ]);
@@ -560,35 +579,34 @@ const generateProductsExcel = async (req, res) => {
   var workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet("productos");
 
-  
   worksheet.columns = [
-    {header: 'id', key: 'id'},
-    {header: 'name', key: 'name'},
-    {header: 'price', key: 'price'}, 
-    {header: 'tags', key: 'tags'},
-    {header: 'description', key: 'description'},
-    {header: 'stock', key: 'stock'},
-    {header: 'status', key: 'status'}
+    { header: "id", key: "id" },
+    { header: "name", key: "name" },
+    { header: "price", key: "price" },
+    { header: "tags", key: "tags" },
+    { header: "description", key: "description" },
+    { header: "stock", key: "stock" },
+    { header: "status", key: "status" },
+  ];
 
-   ];
- 
-
-  for (let i = 0; i < worksheet.columns.length; i += 1) { 
+  for (let i = 0; i < worksheet.columns.length; i += 1) {
     column.width = 40;
   }
 
-   workbook.xlsx.writeBuffer()
-    .then(buffer => {
+  workbook.xlsx
+    .writeBuffer()
+    .then((buffer) => {
       res.set({
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': 'attachment; filename="example.xlsx"'
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": 'attachment; filename="example.xlsx"',
       });
       res.send(buffer);
     })
-  .catch((err) => {
-    console.log("err", err);
-  });
-}
+    .catch((err) => {
+      console.log("err", err);
+    });
+};
 module.exports = {
   createProduct,
   getProducts,
@@ -600,5 +618,6 @@ module.exports = {
   getProductDetail,
   editProduct,
   generateProductsExcel,
-  getProductsWeb
+  getProductsWeb,
+  getProductsByIds,
 };
