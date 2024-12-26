@@ -13,10 +13,11 @@ const {
   getSaleDetailWeb,
 } = require("../../controllers/sale");
 const { validateJWT } = require("../../middleware/validateJWT");
+const { tenantMiddleware } = require("../../middleware/tenant");
 
 const router = Router();
 
-router.post("/create-sale", createSaleByClient.do);
+router.post("/create-sale", tenantMiddleware, createSaleByClient.do);
 router.post("/save-sale", saveSaleByNotification)
 router.post("/", [validateJWT], createSale.check, createSale.do);
 router.get("/detail", [validateJWT], getSaleDetail);

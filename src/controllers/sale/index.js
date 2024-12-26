@@ -492,7 +492,18 @@ const createSaleByClient = {
       postalCode,
       phone,
     } = req.body;
-    console.log('req.body', req.body)
+
+    const { mercadoPagoAccessToken } = req.tenantConfig;
+    const { tenant } = req;
+
+    if (!mercadoPagoAccessToken) {
+        return res.status(400).json({ ok: false, message: "Mercado Pago credentials not configured" });
+    }
+    
+    const client = new MercadoPagoConfig({
+      accessToken: mercadoPagoAccessToken,
+      options: { timeout: 5000, idempotencyKey: "abc" },
+    });
     try {
       const body = {
         items: products.map((product) => ({
@@ -505,6 +516,7 @@ const createSaleByClient = {
         back_urls: {
           success: "https://ecommerce-front-rr7v.onrender.com/compra-exitosa",
           failure: "https://ecommerce-front-rr7v.onrender.com/compra-fallida",
+
         },
         payer: {
           email,
@@ -518,6 +530,7 @@ const createSaleByClient = {
           address,
           postalCode,
           phone,
+          sub_domain: tenant,
         },
         notification_url:
           "https://product-admin-backend.onrender.com/api/sale/save-sale",
@@ -538,6 +551,20 @@ const saveSaleByNotification = async (req, res) => {
   const { topic } = req.query;
   const id = req.query.id;
   console.log("entro a /save-ticket");
+
+  const { mercadoPagoAccessToken } = req.tenantConfig;
+
+  if (!mercadoPagoAccessToken) {
+      return res.status(400).json({ ok: false, message: "Mercado Pago credentials not configured" });
+  }
+  
+  const client = new MercadoPagoConfig({
+    accessToken: mercadoPagoAccessToken,
+    options: { timeout: 5000, idempotencyKey: "abc" },
+  });
+
+  const payment = new Payment(client);
+
 
   if (topic === "payment") {
     // Si la notificación es de tipo pago
