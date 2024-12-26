@@ -495,8 +495,10 @@ const createSaleByClient = {
 
     const { mercadoPagoToken } = req.tenantConfig;
     const { tenant } = req;
-
+    console.log('tenant',tenant )
+    console.log('mercadoPagoToken',mercadoPagoToken )
     if (!mercadoPagoToken) {
+      console.log("sin token de mercado pago")
         return res.status(400).json({ ok: false, message: "Mercado Pago credentials not configured" });
     }
     
