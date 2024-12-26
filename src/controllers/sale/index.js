@@ -533,8 +533,7 @@ const createSaleByClient = {
           phone,
           sub_domain: tenant,
         },
-        notification_url:
-          "https://product-admin-backend.onrender.com/api/sale/save-sale",
+        notification_url: `https://product-admin-backend.onrender.com/api/sale/save-sale?mercadoPagoToken=${mercadoPagoToken}`,
       };
       console.log('mercado pago body', body)
 
@@ -550,8 +549,7 @@ const createSaleByClient = {
 
 const saveSaleByNotification = async (req, res) => {
   const { topic } = req.query;
-  const id = req.query.id;
-  const {mercadoPagoToken} = req.session.tenantConfig
+  const { id, mercadoPagoToken } = req.query;
 
   const client = new MercadoPagoConfig({
     accessToken: mercadoPagoToken,
