@@ -552,16 +552,10 @@ const createSaleByClient = {
 const saveSaleByNotification = async (req, res) => {
   const { topic } = req.query;
   const id = req.query.id;
-  console.log("entro a /save-ticket");
+  const token = req.session.mercadopagoAccessToken
 
-  const { mercadoPagoToken } = req.tenantConfig;
-
-  if (!mercadoPagoToken) {
-      return res.status(400).json({ ok: false, message: "Mercado Pago credentials not configured" });
-  }
-  
   const client = new MercadoPagoConfig({
-    accessToken: mercadoPagoToken,
+    accessToken: token,
     options: { timeout: 5000, idempotencyKey: "abc" },
   });
 
@@ -582,10 +576,12 @@ const saveSaleByNotification = async (req, res) => {
         address,
         postal_code,
         phone,
+        sub_domain
       } = metadata;
       console.log("metadata", metadata);
 
       const newSale = new Sale({
+        tenant: sub_domain,
         status: "PAGADO",
         user,
         name,

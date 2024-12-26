@@ -3,14 +3,19 @@ const Tenant = require("../../models/tenant");
 
 const verifyTenant = async (req, res) => {
   const { subdomain } = req.query;
+
   try {
-    const tenant = await Tenant.findOne({
-      subdomain,
-    });
+    const tenant = await Tenant.findOne({ subdomain });
     if (tenant) {
-      res.json({
+      // Guarda el token en la sesión, pero no lo envíes en la respuesta
+      req.session.mercadopagoAccessToken = tenant.mercadoPagoToken;
+
+      // Crear una copia del objeto tenant sin el token
+      const { mercadoPagoToken, ...tenantWithoutToken } = tenant.toObject();
+
+      return res.json({
         ok: true,
-        tenant: tenant,
+        tenant: tenantWithoutToken, // Enviamos el objeto sin el token
       });
 
       console.log(tenant);
@@ -18,12 +23,14 @@ const verifyTenant = async (req, res) => {
       throw new Error("subdomain error");
     }
   } catch (error) {
-    console.log("tenat error", error);
+    console.error("Tenant error", error);
     res.status(404).json({
       ok: false,
+      message: error.message,
     });
   }
 };
+
 
 const getTenantConfig = async (req, res) => {
   const { tenant } = req.query;

@@ -2,6 +2,10 @@ const { Schema, model } = require("mongoose");
 
 const SaleSchema = Schema(
   {
+    tenant :{
+      type:String,
+      require: true,
+    },
     status: {
       type: String,
       required:true

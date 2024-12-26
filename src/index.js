@@ -5,6 +5,8 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const fileUpload = require("express-fileupload");
 const http = require("http");
+const session = require('express-session');
+
 
 require("dotenv").config();
 
@@ -23,6 +25,13 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+
+app.use(session({
+  secret: process.env.SECRETORPRIVATEKEY,
+  resave: false,
+  saveUninitialized: false,
+}));
 
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }));
