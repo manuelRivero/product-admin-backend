@@ -13,26 +13,12 @@ const { dbConnection } = require("./db");
 const app = express();
 
 const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "https://ecommerce-front-rr7v.onrender.com",
+  /^http:\/\/([a-zA-Z0-9-]+)\.localhost(:[0-9]+)?$/,
+  /^https:\/\/([a-zA-Z0-9-]+)\.onrender\.com$/,
 ];
 
 const corsOptions = {
-  origin: (origin, callback) => {
-    // Permitir solicitudes sin "Origin" (como las hechas desde Postman o en el mismo servidor)
-    if (!origin) {
-      return callback(null, true);
-    }
-
-    // Permitir orígenes explícitos y subdominios dinámicos de localhost
-    const regex = /^http:\/\/[0-9A-Za-z]+\.localhost:3000$/;
-    if (allowedOrigins.includes(origin) || regex.test(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
+  origin:allowedOrigins,
   credentials: true,
 };
 
