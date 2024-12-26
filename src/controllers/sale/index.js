@@ -550,6 +550,7 @@ const createSaleByClient = {
 const saveSaleByNotification = async (req, res) => {
   const { topic } = req.query;
   const { id, mercadoPagoToken } = req.query;
+  console.log("req", req.query)
 
   const client = new MercadoPagoConfig({
     accessToken: mercadoPagoToken,
