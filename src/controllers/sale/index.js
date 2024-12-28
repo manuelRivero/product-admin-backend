@@ -516,8 +516,8 @@ const createSaleByClient = {
         })),
         auto_return: "approved",
         back_urls: {
-          success: "https://ecommerce-front-rr7v.onrender.com/compra-exitosa",
-          failure: "https://ecommerce-front-rr7v.onrender.com/compra-fallida",
+          success: `https://${tenantConfig.subdomain}/compra-exitosa`,
+          failure: `https://${tenantConfig.subdomain}/compra-fallida`,
 
         },
         payer: {
@@ -532,7 +532,7 @@ const createSaleByClient = {
           address,
           postalCode,
           phone,
-          sub_domain: tenant,
+          sub_domain: tenantConfig._id,
         },
         notification_url: `https://product-admin-backend.onrender.com/api/sale/save-sale?mercadoPagoToken=${tenantConfig.mercadoPagoToken}`,
       };
