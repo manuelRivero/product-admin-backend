@@ -493,16 +493,15 @@ const createSaleByClient = {
       phone,
     } = req.body;
 
-    const {mercadoPagoToken} = req.session.tenantConfig
-    const { tenant } = req;
+    const { tenantConfig } = req;
     
-    if (!mercadoPagoToken) {
+    if (!tenantConfig.mercadoPagoToken) {
       console.log("sin token de mercado pago")
         return res.status(400).json({ ok: false, message: "Mercado Pago credentials not configured" });
     }
     
     const client = new MercadoPagoConfig({
-      accessToken: mercadoPagoToken,
+      accessToken: tenantConfig.mercadoPagoToken,
       options: { timeout: 5000, idempotencyKey: "abc" },
     });
     try {
@@ -512,6 +511,8 @@ const createSaleByClient = {
           unit_price: finalPrice(product.price, product.discount),
           quantity: Number(product.quantity),
           currency_id: "ARS",
+          color: product.color,
+          size: product.size ?? null,
         })),
         auto_return: "approved",
         back_urls: {
@@ -533,7 +534,7 @@ const createSaleByClient = {
           phone,
           sub_domain: tenant,
         },
-        notification_url: `https://product-admin-backend.onrender.com/api/sale/save-sale?mercadoPagoToken=${mercadoPagoToken}`,
+        notification_url: `https://product-admin-backend.onrender.com/api/sale/save-sale?mercadoPagoToken=${tenantConfig.mercadoPagoToken}`,
       };
       console.log('mercado pago body', body)
 
