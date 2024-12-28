@@ -15,21 +15,12 @@ const path = require("path");
 const { createProductSchema } = require("./../../schemas/products");
 
 const createProduct = {
-  check: (req, res, next) => {
-    const { body } = req;
-    if (!req.files?.productImage) {
-      res.json({
-        true: false,
-        error: "Las imagenes son requeridas",
-      });
-    } else {
-      req.body.tags = JSON.parse(body.tags);
-      req.body.status = JSON.parse(body.status);
-      validation.validateBody(req, next, createProductSchema);
-    }
-  },
   do: async (req, res) => {
-    const { body, files } = req;
+    const { files } = req;
+    const { name, price, status, images, description, features, discount } =
+      req.body;
+    const { tenant } = req;
+    console.log("features", req.body);
     const productImages = [];
     if (files.productImage.length) {
       for (let element of files.productImage) {
@@ -51,7 +42,18 @@ const createProduct = {
         productImages.push({ url: imageUrl.secure_url });
       } catch {}
     }
-    const product = new Product({ ...body, images: productImages });
+    console.log("features JSON", JSON.parse(features));
+    const product = new Product({
+      features: JSON.parse(features),
+      name,
+      price,
+      status: JSON.parse(status),
+      images,
+      description,
+      discount,
+      images: productImages,
+      tenant,
+    });
     try {
       product.save();
       res.json({
@@ -283,7 +285,9 @@ const createProductsImages = {
   },
 };
 const getProducts = async (req, res) => {
-  console.log("req.query.search", req.query.search);
+  const { tenant } = req;
+  console.log("tenant", tenant);
+  console.log("get products");
   const page = Number(req.query.page) || 0;
   const regex = new RegExp(req.query.search, "i");
   const search = req.query.search ? { name: regex } : {};
@@ -323,11 +327,9 @@ const getProducts = async (req, res) => {
 };
 
 const getProductsWeb = async (req, res) => {
-  const token = req.session
+  const { tenantConfig } = req;
 
   try {
-    console.log("token", token);
-
     // Paginación
     const page = Number(req.query.page) || 0;
     const limit = 10; // Número de productos por página
@@ -337,10 +339,39 @@ const getProductsWeb = async (req, res) => {
     const regex = req.query.search ? new RegExp(req.query.search, "i") : null;
     const minPrice = req.query.minPrice ? Number(req.query.minPrice) : null;
     const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : null;
-    const tags = req.query.tags ? JSON.parse(req.query.tags) : null;
 
     // Construcción del pipeline de agregación
-    const pipeline = [{ $match: { status: { available: true }, stock: { $gt: 0 } } }];
+    const pipeline = [
+      {
+        $addFields: {
+          features: {
+            $map: {
+              input: "$features",
+              as: "feature", // Alias de cada elemento del array
+              in: {
+                color: "$$feature.color",
+                size: "$$feature.size",
+                stock: { $toInt: "$$feature.stock" }, // Convertir stock de la variante a número
+                _id: "$$feature._id",
+              },
+            },
+          },
+        },
+      },
+      // Filtrar productos disponibles con stock > 0 en el principal o en las variantes
+      {
+        $match: {
+          status: { available: true }, // Solo productos disponibles
+          tenant: tenantConfig._id, // Solo del tenant actual
+          $or: [
+            { stock: { $gt: 0 } }, // Stock principal mayor a 0
+            { "features.stock": { $gt: 0 } }, // Stock en alguna variante mayor a 0
+          ],
+        },
+      },
+    ];
+
+    console.log("pipeline", pipeline);
 
     // Filtro por búsqueda (nombre)
     if (regex) {
@@ -390,7 +421,6 @@ const getProductsWeb = async (req, res) => {
   }
 };
 
-
 const getProductsByIds = {
   do: async (req, res, next) => {
     try {
@@ -421,7 +451,6 @@ const getProductsByIds = {
 };
 
 module.exports = getProductsByIds;
-
 
 const getProductDetail = {
   do: async (req, res) => {
@@ -456,9 +485,13 @@ const getProductDetail = {
 };
 
 const getAdminProducts = async (req, res) => {
+  const { tenant, uid } = req;
+  console.log("tenant", tenant, uid);
   const page = Number(req.query.page) || 0;
   const regex = new RegExp(req.query.search, "i");
-  const search = req.query.search ? { name: regex } : {};
+  const search = req.query.search
+    ? { name: regex, tenant: new mongoose.Types.ObjectId(tenant) }
+    : { tenant: new mongoose.Types.ObjectId(tenant) };
   const minPrice = req.query.minPrice
     ? { $lte: Number(req.query.minPrice) }
     : null;

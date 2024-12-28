@@ -31,7 +31,7 @@ const login = async (req, res) => {
 const adminLogin = async (req, res) => {
   const { email, password } = req.body;
 
-  const targetUser = await User.findOne({email});
+  const targetUser = await User.findOne({email}).lean();
   if (!targetUser) {
     return res.status(404).json({
       ok: false,
@@ -47,8 +47,8 @@ const adminLogin = async (req, res) => {
         message: "Credenciales invalidas",
       });
     }
-  
-    const token = await generatejWT(targetUser.id, targetUser.role);
+  console.log('user', targetUser)
+    const token = await generatejWT(targetUser.id, targetUser.role, targetUser.tenant);
     res.status(200).json({
       ok: true,
       token,

@@ -21,16 +21,18 @@ const {
 
 // validation
 const { validateJWT } = require("../../middleware/validateJWT");
+const { tenantMiddleware } = require("../../middleware/tenant");
+
 
 // routes
 router.get("/", [validateJWT], getProducts);
-router.get("/web", getProductsWeb);
+router.get("/web", tenantMiddleware, getProductsWeb);
 router.get("/get-excel-template", [validateJWT], generateProductsExcel);
 router.get("/detail", [validateJWT], getProductDetail.do)
 router.get("/detail/web", getProductDetail.do)
-router.put("/edit/:id", [validateJWT],editProduct.check, editProduct.do)
+router.put("/edit/:id", [validateJWT], editProduct.do)
 router.get("/admin-products", [validateJWT],  getAdminProducts);
-router.post("/", [validateJWT],createProduct.check, createProduct.do);
+router.post("/", [validateJWT], createProduct.do);
 router.post("/like/:id", [validateJWT], likeProduct.check, likeProduct.do);
 router.get("/topProducts", [validateJWT], topProducts);
 router.get("/get-products-by-id", getProductsByIds.do);

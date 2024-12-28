@@ -10,9 +10,11 @@ const validateJWT = (req, res, next) => {
         });
     }
     try {
-        const { uid, role } = jwt.verify(token, process.env.SECRETORPRIVATEKEY);
+        const { uid, role, tenant } = jwt.verify(token, process.env.SECRETORPRIVATEKEY);
+        console.log("validate", tenant)
         req.uid = uid;
-        req.role = role
+        req.role = role;
+        req.tenant = tenant;
         next();
     } catch (error) {
         console.log("error", error)

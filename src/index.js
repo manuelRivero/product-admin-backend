@@ -17,6 +17,7 @@ const { dbConnection } = require("./db");
 const app = express();
 
 const allowedOrigins = [
+  'http://localhost:3000',
   /^http:\/\/([a-zA-Z0-9-]+)\.localhost(:[0-9]+)?$/,
   /^https:\/\/([a-zA-Z0-9-]+)\.onrender\.com$/,
   /^https:\/\/([a-zA-Z0-9-]+)\.tiendapro\.com\.ar\/?$/
@@ -30,21 +31,21 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 
-app.use(session({
-  secret: process.env.SECRETORPRIVATEKEY,
-  resave: false,
-  saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: process.env.DB_CONNECTION,
-    collectionName: "sessions", // Nombre de la colección donde se guardarán las sesiones
-  }),
-  cookie: {
-    domain: ".localhost",
-    secure: false, // Cambiar a true en producción con HTTPS
-    httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24, // 1 día
-  },
-}));
+// app.use(session({
+//   secret: process.env.SECRETORPRIVATEKEY,
+//   resave: false,
+//   saveUninitialized: false,
+//   store: MongoStore.create({
+//     mongoUrl: process.env.DB_CONNECTION,
+//     collectionName: "sessions", // Nombre de la colección donde se guardarán las sesiones
+//   }),
+//   cookie: {
+//     domain: ".localhost",
+//     secure: false, // Cambiar a true en producción con HTTPS
+//     httpOnly: true,
+//     maxAge: 1000 * 60 * 60 * 24, // 1 día
+//   },
+// }));
 
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }));

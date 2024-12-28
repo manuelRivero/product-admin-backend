@@ -1,6 +1,21 @@
 const { string } = require("joi");
 const { Schema, model } = require("mongoose");
 
+const featureSchema = Schema({
+  color: {
+    type: String,
+    required: true
+  },
+  size: {
+    type: String,
+    required: true
+  },
+  stock: {
+    type: String,
+    default: 0
+  }
+});
+
 const ProductSchema = Schema(
   {
     name: {
@@ -42,12 +57,17 @@ const ProductSchema = Schema(
     },
     stock: {
       type: Number,
-      required: true,
+      default:0,
     },
     discount: {
       type: Number,
       default: 0
     },
+    features: {type: [featureSchema], default: []},
+    tenant: {
+      type: String,
+      default: null,
+    }
   },
   { colection: "products", timestamps: true }
 );
