@@ -2,16 +2,16 @@ const { Schema, model } = require("mongoose");
 
 const SaleSchema = Schema(
   {
-    tenant :{
-      type:String,
+    tenant: {
+      type: String,
       require: true,
     },
     status: {
       type: String,
-      required:true
+      required: true,
     },
     products: {
-      type:[
+      type: [
         {
           quantity: { type: Number, required: true },
           data: {
@@ -29,42 +29,49 @@ const SaleSchema = Schema(
               discount: {
                 type: Number,
               },
+              color: {
+                type: String,
+              },
+              size: {
+                type: String,
+                default: null,
+              },
             },
           },
-        }
-      ]
+        },
+      ],
     },
     user: {
       required: true,
-      type: String
+      type: String,
     },
     name: {
       required: true,
-      type: String
+      type: String,
     },
     lastName: {
       required: true,
-      type: String
+      type: String,
     },
     dni: {
       required: true,
-      type: String
+      type: String,
     },
     phone: {
       required: true,
-      type: String
+      type: String,
     },
     postalCode: {
       required: true,
-      type: String
+      type: String,
     },
     address: {
       required: true,
-      type: String
+      type: String,
     },
-    paymentId:{
+    paymentId: {
       required: true,
-      type: String
+      type: String,
     },
     total: {
       type: Number,
