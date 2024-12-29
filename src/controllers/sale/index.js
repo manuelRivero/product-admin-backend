@@ -487,48 +487,68 @@ const createSaleByClient = {
       name,
       lastName,
       dni,
-      products,
+      products: clientProducts,
       address,
       postalCode,
       phone,
     } = req.body;
 
     const { tenantConfig } = req;
-    
+
     if (!tenantConfig.mercadoPagoToken) {
-      console.log("sin token de mercado pago")
-        return res.status(400).json({ ok: false, message: "Mercado Pago credentials not configured" });
+      console.log("Sin token de Mercado Pago");
+      return res
+        .status(400)
+        .json({ ok: false, message: "Mercado Pago credentials not configured" });
     }
-    
+
     const client = new MercadoPagoConfig({
       accessToken: tenantConfig.mercadoPagoToken,
       options: { timeout: 5000, idempotencyKey: "abc" },
     });
+
     try {
+      // Obtener los productos desde la base de datos
+      const productIds = clientProducts.map((p) => p._id);
+      const dbProducts = await ProductModel.find({ _id: { $in: productIds } });
+
+      // Validar que todos los productos existen en la base de datos
+      if (dbProducts.length !== clientProducts.length) {
+        return res
+          .status(400)
+          .json({ ok: false, message: "Invalid products in the request" });
+      }
+
+      // Construir el body con los datos reales de la base de datos
       const body = {
-        items: products.map((product) => ({
-          title: product.name,
-          unit_price: finalPrice(product.price, product.discount),
-          quantity: Number(product.quantity),
-          currency_id: "ARS",
-          color: product.color,
-          size: product.size ?? null,
-        })),
+        items: dbProducts.map((dbProduct) => {
+          const clientProduct = clientProducts.find(
+            (p) => p._id === dbProduct._id.toString()
+          );
+
+          return {
+            title: dbProduct.name,
+            unit_price: finalPrice(dbProduct.price, dbProduct.discount),
+            quantity: Number(clientProduct.quantity),
+            currency_id: "ARS",
+            color: clientProduct.color,
+            size: clientProduct.size ?? null,
+          };
+        }),
         auto_return: "approved",
         back_urls: {
-          success: `https://${tenantConfig.subdomain}/compra-exitosa`,
-          failure: `https://${tenantConfig.subdomain}/compra-fallida`,
-
+          success: `https://${tenantConfig.subdomain}.tiendapro.com.ar/compra-exitosa`,
+          failure: `https://${tenantConfig.subdomain}.tiendapro.com.ar/compra-fallida`,
         },
         payer: {
           email,
         },
         metadata: {
-          user:email,
+          user: email,
           name,
           lastName,
           dni,
-          products,
+          products: clientProducts,
           address,
           postalCode,
           phone,
@@ -536,17 +556,19 @@ const createSaleByClient = {
         },
         notification_url: `https://product-admin-backend.onrender.com/api/sale/save-sale?mercadoPagoToken=${tenantConfig.mercadoPagoToken}`,
       };
-      console.log('mercado pago body', body)
 
+      console.log("Mercado Pago body", body);
 
       const preference = await new Preference(client);
       const response = await preference.create({ body });
       res.json(response);
     } catch (error) {
       console.log("createSaleByClient error", error);
+      res.status(500).json({ ok: false, message: "Internal Server Error" });
     }
   },
 };
+
 
 const saveSaleByNotification = async (req, res) => {
   const { topic } = req.query;
