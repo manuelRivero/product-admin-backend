@@ -510,7 +510,7 @@ const createSaleByClient = {
     try {
       // Obtener los productos desde la base de datos
       const productIds = clientProducts.map((p) => p._id);
-      const dbProducts = await ProductModel.find({ _id: { $in: productIds } });
+      const dbProducts = await Product.find({ _id: { $in: productIds } });
 
       // Validar que todos los productos existen en la base de datos
       if (dbProducts.length !== clientProducts.length) {
