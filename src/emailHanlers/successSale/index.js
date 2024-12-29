@@ -11,13 +11,13 @@ const readFileAsync = promisify(fs.readFile);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export const sendSucessEmail = async ({products, user, tenant, total, payment_id}) => {
+export const sendSucessEmail = async ({products, names, user, tenant, total, payment_id}) => {
   const templateFile = await readFileAsync(
     path.resolve(__dirname, "../../templates/success-email.html"),
     "utf-8"
   );
   const template = handlebars.compile(templateFile);
-  const replacements = {products, user, tenant, total};
+  const replacements = {products, names, user, tenant, total, payment_id};
   const finalHtml = template(replacements);
 
   const mailOptions = {
