@@ -6,8 +6,8 @@ const url = require("url");
 const handlebars = require("handlebars");
 
 // Convertir import.meta.url a __dirname
-const __filename = url.fileURLToPath(require('url').pathToFileURL(__filename).href);
-const __dirname = path.dirname(__filename);
+const __filename = require.main.filename;
+const __dirname = path.dirname(__filename)
 
 // Convertir readFile a promesa
 const readFileAsync = util.promisify(fs.readFile);
