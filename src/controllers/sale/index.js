@@ -615,6 +615,11 @@ const saveSaleByNotification = async (req, res) => {
         phone,
       });
       const response = await newSale.save();
+      const total = products.reduce(
+        (acc, item) => acc + finalPrice(item.price, item.discount)  * item.quantity,
+        0
+      )
+      sendSucessEmail({user, products, total, tenant, payment_id: id})
       console.log('response', response)
       res.sendStatus(200);
       // Procesa la información del pago según tus necesidades
