@@ -8,6 +8,7 @@ const moment = require("moment");
 const { orderStatus } = require("./const");
 const Joi = require("joi");
 const { finalPrice } = require("../../helpers/product");
+const { sendSucessEmail } = require("../../emailHanlers/successSale");
 
 const { MercadoPagoConfig, Payment, Preference } = mercadoPago;
 
