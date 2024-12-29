@@ -31,6 +31,7 @@
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.16",
     "nodemon": "^2.0.20",
+    "promisify": "^0.0.3",
     "read-excel-file": "^5.6.1",
     "socket.io": "^4.5.3",
     "unrar": "^0.2.0",
