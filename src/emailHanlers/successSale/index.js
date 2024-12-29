@@ -1,14 +1,18 @@
-import nodemailer from "nodemailer";
-import fs from "fs/promises";
-import path from "path";
-import handlebars from "handlebars";
-import { fileURLToPath } from "url";
+const nodemailer = require("nodemailer");
+const fs = require("fs");
+const util = require("util");
+const path = require("path");
+const url = require("url");
+const handlebars = require("handlebars");
 
 // Convertir import.meta.url a __dirname
-const __filename = fileURLToPath(import.meta.url);
+const __filename = url.fileURLToPath(require('url').pathToFileURL(__filename).href);
 const __dirname = path.dirname(__filename);
 
-export const sendSuccessEmail = async ({
+// Convertir readFile a promesa
+const readFileAsync = util.promisify(fs.readFile);
+
+const sendSuccessEmail = async ({
   products,
   names,
   user,
@@ -18,7 +22,7 @@ export const sendSuccessEmail = async ({
 }) => {
   try {
     // Leer y compilar la plantilla del correo
-    const templateFile = await fs.readFile(
+    const templateFile = await readFileAsync(
       path.resolve(__dirname, "../../templates/success-email.html"),
       "utf-8"
     );
@@ -31,7 +35,7 @@ export const sendSuccessEmail = async ({
     // Configurar opciones del correo
     const mailOptions = {
       from: "contacto@lorem-insights.com",
-      to: user.email, // Se envía al email del usuario
+      to: user.email, // Enviar al correo del usuario
       subject: "¡Confirmación de tu compra!",
       html: finalHtml,
     };
@@ -43,7 +47,7 @@ export const sendSuccessEmail = async ({
       secure: true, // true para 465, false para otros puertos
       auth: {
         user: "contacto@lorem-insights.com",
-        pass: "/5sM0Hat", // Asegúrate de mantener esto en un entorno seguro
+        pass: "/5sM0Hat", // Asegúrate de mantener esto seguro
       },
     });
 
@@ -55,3 +59,5 @@ export const sendSuccessEmail = async ({
     throw new Error("No se pudo enviar el correo. Inténtalo más tarde.");
   }
 };
+
+module.exports = { sendSuccessEmail };
