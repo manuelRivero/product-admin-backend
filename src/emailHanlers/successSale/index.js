@@ -4,7 +4,6 @@ const fs = require("fs").promises; // Usa promisify implícito con fs.promises
 const handlebars = require("handlebars");
 
 // __filename y __dirname ya están disponibles globalmente en CommonJS.
-console.log("__dirname", path.resolve(__dirname, "../../emailHanlers/success-sale/success-email.html"))
 const sendSuccessEmail = async ({
   products,
   names,
@@ -16,7 +15,7 @@ const sendSuccessEmail = async ({
   try {
     // Carga y compila la plantilla de email
     const templateFile = await fs.readFile(
-      path.resolve(__dirname, "../../emailHanlers/success-sale/success-email.html"),
+      path.resolve(__dirname, "../../templates/success-sale/success-email.html"),
       "utf-8"
     );
     const template = handlebars.compile(templateFile);
