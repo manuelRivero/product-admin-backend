@@ -4,6 +4,7 @@ const fs = require("fs").promises; // Usa promisify implícito con fs.promises
 const handlebars = require("handlebars");
 
 // __filename y __dirname ya están disponibles globalmente en CommonJS.
+console.log("__dirname", path.resolve(__dirname, "../../templates/success-sale/success-email.html"))
 const sendSuccessEmail = async ({
   products,
   names,
