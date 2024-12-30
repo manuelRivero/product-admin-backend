@@ -2,9 +2,18 @@ const path = require("path");
 const nodemailer = require("nodemailer");
 const fs = require("fs").promises; // Usa promisify implícito con fs.promises
 const handlebars = require("handlebars");
+const { finalPrice } = require("../../helpers/product");
 
-handlebars.registerHelper('checkSize', function (size) {
-  return size ? `Talle: ${size}` : 'Talle no disponible';
+handlebars.registerHelper("checkSize", function (size) {
+  return size ? `Talle: ${size}` : "";
+});
+
+handlebars.registerHelper("getImage", function (images, index) {
+  return images && images[index] ? images[index] : ""; // Retorna el elemento o una cadena vacía si no existe
+});
+
+handlebars.registerHelper("getFinalPrice", function (price, discount) {
+  return finalPrice(price, discount); // Retorna el elemento o una cadena vacía si no existe
 });
 // __filename y __dirname ya están disponibles globalmente en CommonJS.
 const sendSuccessEmail = async ({
@@ -14,17 +23,37 @@ const sendSuccessEmail = async ({
   tenant,
   total,
   payment_id,
+  address,
+  dni,
+  postalCode,
+  phone,
+  paymentId,
 }) => {
   try {
     // Carga y compila la plantilla de email
     const templateFile = await fs.readFile(
-      path.resolve(__dirname, "../../templates/success-sale/success-email.html"),
+      path.resolve(
+        __dirname,
+        "../../templates/success-sale/success-email.html"
+      ),
       "utf-8"
     );
     const template = handlebars.compile(templateFile);
-
+    console.log("products 2");
     // Reemplaza los datos
-    const replacements = { products, names, user, tenant, total, payment_id };
+    const replacements = {
+      products,
+      names,
+      user,
+      tenant,
+      total,
+      payment_id,
+      address,
+      dni,
+      postalCode,
+      phone,
+      paymentId,
+    };
     const finalHtml = template(replacements);
 
     // Configuración del email

@@ -12,11 +12,6 @@ const { sendSuccessEmail } = require("../../emailHanlers/successSale");
 
 const { MercadoPagoConfig, Payment, Preference } = mercadoPago;
 
-const client = new MercadoPagoConfig({
-  accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN,
-  options: { timeout: 5000, idempotencyKey: "abc" },
-});
-const payment = new Payment(client);
 
 const createSaleFromAdmin = {
   check: async (req, res, next) => {
@@ -620,7 +615,7 @@ const saveSaleByNotification = async (req, res) => {
         (acc, item) => acc + finalPrice(item.price, item.discount)  * item.quantity,
         0
       )
-      await sendSuccessEmail({user, names: `${name} ${last_name}`, products, total, tenant: sub_domain, payment_id: id})
+      await sendSuccessEmail({ address, dni, postalCode, phone ,paymentId, user, names: `${name} ${last_name}`, products, total, tenant: sub_domain, payment_id: id})
       console.log('response', response)
       res.sendStatus(200);
       // Procesa la información del pago según tus necesidades
@@ -630,6 +625,25 @@ const saveSaleByNotification = async (req, res) => {
     }
   }
 };
+
+const sendEmail = async (req, res) => {
+  const {
+    user,
+    name,
+    last_name,
+    dni,
+    products,
+    address,
+    postal_code,
+    phone,
+    sub_domain,
+    total,
+    id,
+  } = req.body;
+  console.log("products", products)
+  await sendSuccessEmail({user, names: `${name} ${last_name}`, products, total, tenant:"sub_domain", payment_id: id})
+res.json({ok:true})
+}
 
 module.exports = {
   createSale,
@@ -643,4 +657,5 @@ module.exports = {
   createSaleByClient,
   saveSaleByNotification,
   getSaleDetailWeb,
+  sendEmail
 };
