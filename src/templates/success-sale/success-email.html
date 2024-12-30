@@ -770,7 +770,7 @@
                       </td>
                     </tr>
                     <!-- Productos -->
-                  {{ #each products <tr>
+                  {{ #each products }} <tr>
                       <td
                         class="esdev-adapt-off"
                         align="left"
@@ -844,7 +844,7 @@
                                         >
                                           <img
                                             class="adapt-img"
-                                            src="{{this.images[0]}}"
+                                            src="{{this.data.images[0]}}"
                                             alt=""
                                             style="
                                               display: block;
@@ -918,7 +918,7 @@
                                               font-size: 14px;
                                             "
                                           >
-                                            <strong>Polo</strong>
+                                            <strong>{{this.data.name}}</strong>
                                           </p>
                                         </td>
                                       </tr>
@@ -945,9 +945,9 @@
                                               font-size: 14px;
                                             "
                                           >
-                                            {{ this.size &&
-                                            `Talle:${this.size}`}}<br />Color:
-                                            {{this.color}}
+                                          {{checkSize this.data.size}}
+                                          <br />Color:
+                                            {{this.data.color}}
                                           </p>
                                         </td>
                                       </tr>
@@ -1077,7 +1077,7 @@
                                               font-size: 14px;
                                             "
                                           >
-                                            <strong>${{this.price}}</strong>
+                                            <strong>${{this.data.price}}</strong>
                                           </p>
                                         </td>
                                       </tr>
@@ -1089,7 +1089,7 @@
                           </tr>
                         </table>
                       </td>
-                    </tr>}}
+                    </tr>{{/each}}
                                         <!-- Productos -->
 
                     <tr>

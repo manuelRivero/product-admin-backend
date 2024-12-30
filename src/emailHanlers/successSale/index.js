@@ -3,6 +3,9 @@ const nodemailer = require("nodemailer");
 const fs = require("fs").promises; // Usa promisify implícito con fs.promises
 const handlebars = require("handlebars");
 
+handlebars.registerHelper('checkSize', function (size) {
+  return size ? `Talle: ${size}` : 'Talle no disponible';
+});
 // __filename y __dirname ya están disponibles globalmente en CommonJS.
 const sendSuccessEmail = async ({
   products,

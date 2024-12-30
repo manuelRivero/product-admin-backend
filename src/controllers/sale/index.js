@@ -620,7 +620,7 @@ const saveSaleByNotification = async (req, res) => {
         (acc, item) => acc + finalPrice(item.price, item.discount)  * item.quantity,
         0
       )
-      await sendSuccessEmail({user, names: `${name} ${last_name}`, products, total, tenant: sub_domain, payment_id: id})
+      await sendSuccessEmail({user, names: `${name} ${last_name}`, products: products.map((product) =>({ quantity: product.quantity, data: {...product}})), total, tenant: sub_domain, payment_id: id})
       console.log('response', response)
       res.sendStatus(200);
       // Procesa la información del pago según tus necesidades
