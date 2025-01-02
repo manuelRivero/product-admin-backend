@@ -12,7 +12,6 @@ const { sendSuccessEmail } = require("../../emailHanlers/successSale");
 
 const { MercadoPagoConfig, Payment, Preference } = mercadoPago;
 
-
 const createSaleFromAdmin = {
   check: async (req, res, next) => {
     const schema = Joi.object({
@@ -191,19 +190,29 @@ const createSale = {
   },
 };
 const getSales = async (req, res) => {
-  const { query } = req;
+  const { query, tenant } = req;
+  console.log("tenant", tenant);
   const page = Number(req.query.page) || 0;
   const status = query.status ? { status: orderStatus[query.status] } : {};
 
-  const [sales, total] = await Promise.all(
-    [
-      Sale.find({ ...status })
-        .populate({ path: "user", select: "name lastname email provider" })
-        .skip(page * 10)
-        .limit(10),
-    ],
-    Sale.find().count()
-  );
+  const result = await Sale.aggregate([
+    {
+      $match: { tenant: new mongoose.Types.ObjectId(tenant), ...status },
+    },
+    {
+      $facet: {
+        total: [{ $count: "count" }],
+        sales: [
+          { $skip: page * 10 },
+          { $limit: 10 },
+          { $sort: { createdAt: -1 } },
+        ],
+      },
+    },
+  ]);
+  console.log("result", result);
+  const total = result[0]?.total[0]?.count || 0;
+  const sales = result[0]?.sales || [];
   res.status(200).json({
     ok: true,
     sales,
@@ -239,43 +248,42 @@ const getSaleDetailWeb = async (req, res) => {
 
   const sale = await Sale.aggregate([
     { $match: { paymentId: id } },
-    { $unwind: '$products' },
+    { $unwind: "$products" },
     {
       $lookup: {
-        from: 'products',
-        localField: 'products.data._id',
-        foreignField: '_id',
-        as: 'product_data',
+        from: "products",
+        localField: "products.data._id",
+        foreignField: "_id",
+        as: "product_data",
       },
     },
     {
       $addFields: {
-        'products.details': '$product_data', // Añade todos los productos relacionados al campo `details`
+        "products.details": "$product_data", // Añade todos los productos relacionados al campo `details`
       },
     },
     {
-      $unset: 'product_data', // Opcional: elimina el campo product_data si no lo necesitas más
+      $unset: "product_data", // Opcional: elimina el campo product_data si no lo necesitas más
     },
     {
       $group: {
-        _id: '$_id',
-        paymentId: { $first: '$paymentId' },
-        user: { $first: '$user' },
-        status: { $first: '$status' },
-        createdAt: { $first: '$createdAt' },
-        updatedAt: { $first: '$updatedAt' },
-        name: { $first: '$name' },
-        lastName: { $first: '$lastName' },
-        dni: { $first: '$dni' },
-        phone: { $first: '$phone' },
-        postalCode: { $first: '$postalCode' },
-        address: { $first: '$address' },
-        products: { $push: '$products' },
+        _id: "$_id",
+        paymentId: { $first: "$paymentId" },
+        user: { $first: "$user" },
+        status: { $first: "$status" },
+        createdAt: { $first: "$createdAt" },
+        updatedAt: { $first: "$updatedAt" },
+        name: { $first: "$name" },
+        lastName: { $first: "$lastName" },
+        dni: { $first: "$dni" },
+        phone: { $first: "$phone" },
+        postalCode: { $first: "$postalCode" },
+        address: { $first: "$address" },
+        products: { $push: "$products" },
       },
     },
   ]);
-  
-  
+
   console.log("sale", sale[0].products);
   return res.json({
     ok: true,
@@ -327,7 +335,7 @@ const changeSaleStatus = {
   },
 };
 const getMonthlySales = async (req, res) => {
-  const { query } = req;
+  const { query, tenant } = req;
   const startOfMonth = moment(query.date, "DD-MM-YYYY").startOf("month");
   const endOfMonth = moment(query.date, "DD-MM-YYYY").endOf("month");
 
@@ -338,50 +346,47 @@ const getMonthlySales = async (req, res) => {
     },
   };
 
-const sales = await Sale.aggregate([
-  // Filtrar por período de tiempo
-  {
-    $match: {
-      ...dateQuery,
-      status: 'PAGADO', // Opcional: solo considerar ventas pagadas
-    },
-  },
-  // Descomponer el array de productos
-  { $unwind: '$products' },
-  // Calcular el subtotal de cada producto considerando el descuento
-  {
-    $addFields: {
-      'products.subtotal': {
-        $multiply: [
-          '$products.data.price',
-          {
-            $divide: [
-              { $subtract: [100, '$products.data.discount'] },
-              100,
-            ],
-          },
-          '$products.quantity',
-        ],
+  const sales = await Sale.aggregate([
+    // Filtrar por período de tiempo
+    {
+      $match: {
+        ...dateQuery,
+        status: "PAGADO", // Opcional: solo considerar ventas pagadas
+        tenant: new mongoose.Types.ObjectId(tenant)
       },
     },
-  },
-  // Agrupar por día y calcular el total de ventas por día
-  {
-    $group: {
-      _id: {
-        $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }, // Formatear la fecha sin hora
+    // Descomponer el array de productos
+    { $unwind: "$products" },
+    // Calcular el subtotal de cada producto considerando el descuento
+    {
+      $addFields: {
+        "products.subtotal": {
+          $multiply: [
+            "$products.data.price",
+            {
+              $divide: [{ $subtract: [100, "$products.data.discount"] }, 100],
+            },
+            "$products.quantity",
+          ],
+        },
       },
-      total: { $sum: '$products.subtotal' }, // Sumar el total de ventas por día
     },
-  },
-  // Ordenar los resultados por fecha (opcional)
-  {
-    $sort: { _id: 1 }, // Orden ascendente por fecha
-  },
-]);
+    // Agrupar por día y calcular el total de ventas por día
+    {
+      $group: {
+        _id: {
+          $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }, // Formatear la fecha sin hora
+        },
+        total: { $sum: "$products.subtotal" }, // Sumar el total de ventas por día
+      },
+    },
+    // Ordenar los resultados por fecha (opcional)
+    {
+      $sort: { _id: 1 }, // Orden ascendente por fecha
+    },
+  ]);
 
-  
-  console.log('getMonthlySales', sales)
+  console.log("getMonthlySales", sales);
   res.status(200).json({
     ok: true,
     sales,
@@ -428,10 +433,11 @@ const dailySales = {
   do: async (req, res, next) => {
     try {
       const date = req.query.from;
-
+      const {tenant} = req;
       const sales = await Sale.aggregate([
         {
           $match: {
+            tenant: new mongoose.Types.ObjectId(tenant),
             createdAt: {
               $lte: moment(date).utc().endOf("date").toDate(),
               $gte: moment(date).utc().startOf("date").toDate(),
@@ -451,7 +457,17 @@ const dailySales = {
                   {
                     $multiply: [
                       { $toDouble: "$products.data.price" },
-                      { $subtract: [1, { $divide: [{ $toDouble: "$products.data.discount" }, 100] }] },
+                      {
+                        $subtract: [
+                          1,
+                          {
+                            $divide: [
+                              { $toDouble: "$products.data.discount" },
+                              100,
+                            ],
+                          },
+                        ],
+                      },
                     ],
                   },
                 ],
@@ -463,7 +479,7 @@ const dailySales = {
 
       // Sumar todas las ventas totales
       const total = sales.reduce((acc, sale) => acc + sale.totalSales, 0);
-
+      console.log('details', sales);
       res.status(200).json({
         ok: true,
         total,
@@ -493,9 +509,10 @@ const createSaleByClient = {
 
     if (!tenantConfig.mercadoPagoToken) {
       console.log("Sin token de Mercado Pago");
-      return res
-        .status(400)
-        .json({ ok: false, message: "Mercado Pago credentials not configured" });
+      return res.status(400).json({
+        ok: false,
+        message: "Mercado Pago credentials not configured",
+      });
     }
 
     const client = new MercadoPagoConfig({
@@ -565,11 +582,10 @@ const createSaleByClient = {
   },
 };
 
-
 const saveSaleByNotification = async (req, res) => {
   const { topic } = req.query;
   const { id, mercadoPagoToken } = req.query;
-  console.log("req", req.query)
+  console.log("req", req.query);
 
   const client = new MercadoPagoConfig({
     accessToken: mercadoPagoToken,
@@ -577,7 +593,6 @@ const saveSaleByNotification = async (req, res) => {
   });
 
   const payment = new Payment(client);
-
 
   if (topic === "payment") {
     // Si la notificación es de tipo pago
@@ -593,7 +608,7 @@ const saveSaleByNotification = async (req, res) => {
         address,
         postal_code,
         phone,
-        sub_domain
+        sub_domain,
       } = metadata;
       console.log("metadata", metadata);
 
@@ -604,7 +619,10 @@ const saveSaleByNotification = async (req, res) => {
         name,
         lastName: last_name,
         dni,
-        products : products.map((product) =>({ quantity: product.quantity, data: {...product}})),
+        products: products.map((product) => ({
+          quantity: product.quantity,
+          data: { ...product },
+        })),
         paymentId: id,
         address,
         postalCode: postal_code,
@@ -612,11 +630,24 @@ const saveSaleByNotification = async (req, res) => {
       });
       const response = await newSale.save();
       const total = products.reduce(
-        (acc, item) => acc + finalPrice(item.price, item.discount)  * item.quantity,
+        (acc, item) =>
+          acc + finalPrice(item.price, item.discount) * item.quantity,
         0
-      )
-      await sendSuccessEmail({ address, dni, postalCode, phone ,paymentId, user, names: `${name} ${last_name}`, products, total, tenant: sub_domain, payment_id: id})
-      console.log('response', response)
+      );
+      await sendSuccessEmail({
+        address,
+        dni,
+        postalCode,
+        phone,
+        paymentId,
+        user,
+        names: `${name} ${last_name}`,
+        products,
+        total,
+        tenant: sub_domain,
+        payment_id: id,
+      });
+      console.log("response", response);
       res.sendStatus(200);
       // Procesa la información del pago según tus necesidades
     } catch (error) {
@@ -640,10 +671,17 @@ const sendEmail = async (req, res) => {
     total,
     id,
   } = req.body;
-  console.log("products", products)
-  await sendSuccessEmail({user, names: `${name} ${last_name}`, products, total, tenant:"sub_domain", payment_id: id})
-res.json({ok:true})
-}
+  console.log("products", products);
+  await sendSuccessEmail({
+    user,
+    names: `${name} ${last_name}`,
+    products,
+    total,
+    tenant: "sub_domain",
+    payment_id: id,
+  });
+  res.json({ ok: true });
+};
 
 module.exports = {
   createSale,
@@ -657,5 +695,5 @@ module.exports = {
   createSaleByClient,
   saveSaleByNotification,
   getSaleDetailWeb,
-  sendEmail
+  sendEmail,
 };

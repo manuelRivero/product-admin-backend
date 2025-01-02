@@ -328,7 +328,7 @@ const getProducts = async (req, res) => {
 
 const getProductsAdmin = async (req, res) => {
   const { uid, role } = req;
-  console.log('targetAdmin', uid, role )
+  console.log("targetAdmin", uid, role);
 
   const page = Number(req.query.page) || 0;
   const regex = new RegExp(req.query.search, "i");
@@ -342,25 +342,28 @@ const getProductsAdmin = async (req, res) => {
   const priceQuery =
     minPrice && maxPrice ? { price: { ...minPrice, ...maxPrice } } : {};
 
-
   const targetAdmin = await User.findById(uid).lean();
 
   const { tenant } = targetAdmin;
-  console.log('tenant', tenant)
-  const result= await Product.aggregate([
-    {$match:{
-      tenant,
-      ...search
-    }},
-    {$facet: {
-      total: [{ $count: "count" }],
-      products: [{ $skip: page * 10 }, { $limit: 10 }],
-    },}
-  ])
+  console.log("tenant", tenant);
+  const result = await Product.aggregate([
+    {
+      $match: {
+        tenant,
+        ...search,
+      },
+    },
+    {
+      $facet: {
+        total: [{ $count: "count" }],
+        products: [{ $skip: page * 10 }, { $limit: 10 }],
+      },
+    },
+  ]);
 
   const total = result[0]?.total[0]?.count || 0;
   const products = result[0]?.products || [];
-  
+
   res.json({
     ok: true,
     products,
@@ -605,8 +608,10 @@ const likeProduct = {
 };
 const topProducts = async (req, res) => {
   const page = req.query.page || 0;
+  const { tenant } = req;
 
   const topProducts = await Sales.aggregate([
+    { $match: { tenant: new mongoose.Types.ObjectId(tenant) } },
     { $unwind: "$products" },
     {
       $group: {
@@ -697,5 +702,5 @@ module.exports = {
   generateProductsExcel,
   getProductsWeb,
   getProductsByIds,
-  getProductsAdmin
+  getProductsAdmin,
 };
