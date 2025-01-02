@@ -8,7 +8,6 @@ const featureSchema = Schema({
   },
   size: {
     type: String,
-    required: true
   },
   stock: {
     type: String,

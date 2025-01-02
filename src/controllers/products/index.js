@@ -123,6 +123,8 @@ const editProduct = {
     product.stock = req.body.stock;
     product.images = [...product.images, ...productImages];
     product.status.available = req.body.status.available;
+    product.features = JSON.parse(req.body.features);
+
 
     const productSave = await product.save();
 
@@ -529,41 +531,41 @@ const getProductDetail = {
   },
 };
 
-const getAdminProducts = async (req, res) => {
-  const { tenant, uid } = req;
-  console.log("tenant", tenant, uid);
-  const page = Number(req.query.page) || 0;
-  const regex = new RegExp(req.query.search, "i");
-  const search = req.query.search
-    ? { name: regex, tenant: new mongoose.Types.ObjectId(tenant) }
-    : { tenant: new mongoose.Types.ObjectId(tenant) };
-  const minPrice = req.query.minPrice
-    ? { $lte: Number(req.query.minPrice) }
-    : null;
-  const maxPrice = req.query.maxPrice
-    ? { $lte: Number(req.query.maxPrice) }
-    : null;
-  const priceQuery =
-    minPrice && maxPrice ? { price: { ...minPrice, ...maxPrice } } : {};
-  const tagArray = req.query.tags ? req.query.tags.split(",") : null;
-  const tags = tagArray
-    ? { "tags.name": { $in: tagArray.map((e) => new RegExp(e, "i")) } }
-    : {};
-  console.log("tags", tags);
-  let [products, count] = await Promise.all([
-    Product.find({ ...search, ...tags, ...priceQuery })
-      .skip(page * 10)
-      .limit(10)
-      .lean(),
-    Product.find({ ...search, ...tags, ...priceQuery }).count(),
-  ]);
+// const getAdminProducts = async (req, res) => {
+//   const { tenant, uid } = req;
+//   console.log("tenant", tenant, uid);
+//   const page = Number(req.query.page) || 0;
+//   const regex = new RegExp(req.query.search, "i");
+//   const search = req.query.search
+//     ? { name: regex, tenant: new mongoose.Types.ObjectId(tenant) }
+//     : { tenant: new mongoose.Types.ObjectId(tenant) };
+//   const minPrice = req.query.minPrice
+//     ? { $lte: Number(req.query.minPrice) }
+//     : null;
+//   const maxPrice = req.query.maxPrice
+//     ? { $lte: Number(req.query.maxPrice) }
+//     : null;
+//   const priceQuery =
+//     minPrice && maxPrice ? { price: { ...minPrice, ...maxPrice } } : {};
+//   const tagArray = req.query.tags ? req.query.tags.split(",") : null;
+//   const tags = tagArray
+//     ? { "tags.name": { $in: tagArray.map((e) => new RegExp(e, "i")) } }
+//     : {};
+//   console.log("tags", tags);
+//   let [products, count] = await Promise.all([
+//     Product.find({ ...search, ...tags, ...priceQuery })
+//       .skip(page * 10)
+//       .limit(10)
+//       .lean(),
+//     Product.find({ ...search, ...tags, ...priceQuery }).count(),
+//   ]);
 
-  res.json({
-    ok: true,
-    data: products,
-    pageInfo: count,
-  });
-};
+//   res.json({
+//     ok: true,
+//     data: products,
+//     pageInfo: count,
+//   });
+// };
 
 const likeProduct = {
   check: (req, res, next) => {
@@ -696,7 +698,7 @@ module.exports = {
   topProducts,
   createProductsFromExcel,
   createProductsImages,
-  getAdminProducts,
+  // getAdminProducts,
   getProductDetail,
   editProduct,
   generateProductsExcel,
