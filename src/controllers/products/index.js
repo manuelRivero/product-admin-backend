@@ -120,7 +120,6 @@ const editProduct = {
     product.price = req.body.price;
     product.discount = req.body.discount;
     product.description = req.body.description;
-    product.stock = req.body.stock;
     product.images = [...product.images, ...productImages];
     product.status.available = req.body.status.available;
     product.features = JSON.parse(req.body.features);
