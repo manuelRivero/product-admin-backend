@@ -48,7 +48,7 @@ const adminLogin = async (req, res) => {
       });
     }
   console.log('user', targetUser)
-    const token = await generatejWT(targetUser.id, targetUser.role, targetUser.tenant);
+    const token = await generatejWT(targetUser._id.toString(), targetUser.role, targetUser.tenant.toString());
     res.status(200).json({
       ok: true,
       token,

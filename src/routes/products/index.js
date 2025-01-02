@@ -16,7 +16,8 @@ const {
   editProduct,
   generateProductsExcel,
   getProductsWeb,
-  getProductsByIds
+  getProductsByIds,
+  getProductsAdmin
 } = require("../../controllers/products");
 
 // validation
@@ -31,7 +32,7 @@ router.get("/get-excel-template", [validateJWT], generateProductsExcel);
 router.get("/detail", [validateJWT], getProductDetail.do)
 router.get("/detail/web", getProductDetail.do)
 router.put("/edit/:id", [validateJWT], editProduct.do)
-router.get("/admin-products", [validateJWT],  getAdminProducts);
+router.get("/admin-products", [validateJWT],  getProductsAdmin);
 router.post("/", [validateJWT], createProduct.do);
 router.post("/like/:id", [validateJWT], likeProduct.check, likeProduct.do);
 router.get("/topProducts", [validateJWT], topProducts);

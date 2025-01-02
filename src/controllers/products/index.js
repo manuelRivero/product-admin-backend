@@ -42,19 +42,19 @@ const createProduct = {
         productImages.push({ url: imageUrl.secure_url });
       } catch {}
     }
-    console.log("features JSON", JSON.parse(features));
-    const product = new Product({
-      features: JSON.parse(features),
-      name,
-      price,
-      status: JSON.parse(status),
-      images,
-      description,
-      discount,
-      images: productImages,
-      tenant,
-    });
     try {
+      console.log("features JSON", JSON.parse(features));
+      const product = new Product({
+        features: JSON.parse(features),
+        name,
+        price,
+        status: JSON.parse(status),
+        images,
+        description,
+        discount,
+        images: productImages,
+        tenant,
+      });
       product.save();
       res.json({
         ok: true,
@@ -319,6 +319,48 @@ const getProducts = async (req, res) => {
     }
   });
 
+  res.json({
+    ok: true,
+    products,
+    total,
+  });
+};
+
+const getProductsAdmin = async (req, res) => {
+  const { uid, role } = req;
+  console.log('targetAdmin', uid, role )
+
+  const page = Number(req.query.page) || 0;
+  const regex = new RegExp(req.query.search, "i");
+  const search = req.query.search ? { name: regex } : {};
+  const minPrice = req.query.minPrice
+    ? { $lte: Number(req.query.minPrice) }
+    : null;
+  const maxPrice = req.query.maxPrice
+    ? { $lte: Number(req.query.maxPrice) }
+    : null;
+  const priceQuery =
+    minPrice && maxPrice ? { price: { ...minPrice, ...maxPrice } } : {};
+
+
+  const targetAdmin = await User.findById(uid).lean();
+
+  const { tenant } = targetAdmin;
+  console.log('tenant', tenant)
+  const result= await Product.aggregate([
+    {$match:{
+      tenant,
+      ...search
+    }},
+    {$facet: {
+      total: [{ $count: "count" }],
+      products: [{ $skip: page * 10 }, { $limit: 10 }],
+    },}
+  ])
+
+  const total = result[0]?.total[0]?.count || 0;
+  const products = result[0]?.products || [];
+  
   res.json({
     ok: true,
     products,
@@ -655,4 +697,5 @@ module.exports = {
   generateProductsExcel,
   getProductsWeb,
   getProductsByIds,
+  getProductsAdmin
 };
