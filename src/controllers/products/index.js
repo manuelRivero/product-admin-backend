@@ -20,7 +20,7 @@ const createProduct = {
     const { name, price, status, images, description, features, discount } =
       req.body;
     const { tenant } = req;
-    console.log("features", req.body);
+    console.log("status", status);
     const productImages = [];
     if (files.productImage.length) {
       for (let element of files.productImage) {
@@ -115,13 +115,13 @@ const editProduct = {
         }
       });
     }
-    console.log("product images", product.images);
+    console.log("JSON.parse(req.body.features)", JSON.parse(req.body.status));
     product.name = req.body.name;
     product.price = req.body.price;
     product.discount = req.body.discount;
     product.description = req.body.description;
     product.images = [...product.images, ...productImages];
-    product.status.available = req.body.status.available;
+    product.status = JSON.parse(req.body.status);
     product.features = JSON.parse(req.body.features);
 
 
