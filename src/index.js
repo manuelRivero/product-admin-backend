@@ -21,8 +21,6 @@ const allowedOrigins = [
   /^http:\/\/([a-zA-Z0-9-]+)\.localhost(:[0-9]+)?$/,
   /^https:\/\/([a-zA-Z0-9-]+)\.onrender\.com$/,
   /^https:\/\/([a-zA-Z0-9-]+)\.tiendapro\.com\.ar(\/.*)?$/,
-  /^https:\/\/([a-zA-Z0-9-]+)\-admin\.tiendapro\.com\.ar(\/.*)?$/,
-  /^https:\/\/([a-zA-Z0-9-]+)\-admin.tiendapro.com.ar(\/.*)?$/,
 ];
 
 const corsOptions = {
