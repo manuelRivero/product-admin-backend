@@ -45,7 +45,7 @@ const createProduct = {
     try {
       console.log("features JSON", JSON.parse(features));
       const product = new Product({
-        features: JSON.parse(features),
+        features: JSON.parse(req.body.features).map((feature) => ({...feature, size: feature.size !== '' ? feature.size : null})),
         name,
         price,
         status: JSON.parse(status),
@@ -122,7 +122,7 @@ const editProduct = {
     product.description = req.body.description;
     product.images = [...product.images, ...productImages];
     product.status = JSON.parse(req.body.status);
-    product.features = JSON.parse(req.body.features);
+    product.features = JSON.parse(req.body.features).map((feature) => ({...feature, size: feature.size !== '' ? feature.size : null}));
 
 
     const productSave = await product.save();
