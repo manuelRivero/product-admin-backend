@@ -637,7 +637,7 @@ const saveSaleByNotification = async (req, res) => {
       await sendSuccessEmail({
         address,
         dni,
-        postalCode,
+        postalCode: postal_code,
         phone,
         paymentId,
         user,
