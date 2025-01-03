@@ -16,19 +16,22 @@ const { dbConnection } = require("./db");
 
 const app = express();
 
+const allowedOrigins = [
+  'http://localhost:3000',
+  /^http:\/\/([a-zA-Z0-9-]+)\.localhost(:[0-9]+)?$/,
+  /^https:\/\/([a-zA-Z0-9-]+)\.onrender\.com$/,
+  /^https:\/\/([a-zA-Z0-9-]+)\.tiendapro\.com\.ar(\/.*)?$/,
+  /^https:\/\/([a-zA-Z0-9-]+)\-admin\.tiendapro\.com\.ar(\/.*)?$/,
+  /^https:\/\/([a-zA-Z0-9-]+)\-admin.tiendapro.com.ar(\/.*)?$/,
+];
 
 const corsOptions = {
-  origin:'*',
+  origin:allowedOrigins,
   credentials: true,
 };
 
 app.use(cors(corsOptions));
 
-app.all('/*', function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "X-Requested-With");
-  next();
-});
 
 
 // app.use(session({
