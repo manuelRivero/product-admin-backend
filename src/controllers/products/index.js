@@ -53,7 +53,7 @@ const createProduct = {
         description,
         discount,
         images: productImages,
-        tenant,
+        tenant: new mongoose.Types.ObjectId(tenant),
       });
       product.save();
       res.json({
